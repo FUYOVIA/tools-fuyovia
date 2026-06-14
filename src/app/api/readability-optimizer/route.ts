@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
 - Note: Keep it clear, but don't oversimplify concepts`,
 
       business: `BUSINESS PROFESSIONAL AUDIENCE (10th-12th grade reading level)
-- Target: Managers, entrepreneurs,职场 professionals
+- Target: Managers, entrepreneurs, business professionals
 - Sentence length: 18-22 words average
 - Vocab: Business terms OK, but explain unusual ones
 - Structure: Executive summary style, scannable with bullets

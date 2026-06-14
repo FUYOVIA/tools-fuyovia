@@ -161,7 +161,7 @@ export default function PremiumToolPage({ params }: PremiumToolPageProps) {
         {/* Free trial notice */}
         <div className="mt-6 p-4 bg-amber-50 border border-amber-200/50 rounded-2xl">
           <p className="text-sm text-amber-700">
-            <strong>Free Trial:</strong> AI tools are currently in free trial mode. For production use with credits and会员 plans, please contact support.
+            <strong>Free Trial:</strong> AI tools are currently in free trial mode. For production use with credits and membership plans, please contact support.
           </p>
         </div>
       </div>

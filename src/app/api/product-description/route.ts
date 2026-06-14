@@ -36,7 +36,7 @@ A great product description:
 - Ends with a clear, low-friction CTA
 
 Structure to follow:
-1. **Headline** - Benefit-focused, not just product name (e.g., "藜麦能量碗 - 为忙碌早晨提供持久饱腹感" → for English: "The Travel Mug That Keeps Coffee Hot for 12 Hours")
+1. **Headline** - Benefit-focused, not just product name (e.g., "Quinoa Power Bowl - Sustained Energy for Busy Mornings" → "The Travel Mug That Keeps Coffee Hot for 12 Hours")
 2. **Opening hook** - One sentence that identifies the core pain point
 3. **Benefit bulletes** (3-5 key benefits, each with a micro-outcome)
 4. **Sensory/technical details** - What it's like to use
