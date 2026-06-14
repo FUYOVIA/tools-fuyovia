@@ -23,7 +23,7 @@ export default function VideoScriptClient({ previewMode = false }: VideoScriptCl
     setOutput('')
 
     try {
-      const res = await authFetch('/api/video-script', {
+      const res = await authFetch('/api/video-script-generator', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ topic, platform, duration }),
@@ -40,7 +40,7 @@ export default function VideoScriptClient({ previewMode = false }: VideoScriptCl
       if (data.error) {
         setError(data.error)
       } else {
-        setOutput(data.script || 'No script generated.')
+        setOutput(data.data || data.script || 'No script generated.')
       }
     } catch {
       setError('Failed to generate script. Please try again.')

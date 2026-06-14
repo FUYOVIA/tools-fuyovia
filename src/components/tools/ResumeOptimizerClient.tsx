@@ -15,7 +15,6 @@ export default function ResumeOptimizerClient({ previewMode = false }: ResumeOpt
   const [output, setOutput] = useState<Record<string, unknown> | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [activeTab, setActiveTab] = useState<'resume' | 'coverLetter'>('resume')
   const { authFetch } = useAuthFetch()
 
   const handleGenerate = async () => {
@@ -61,10 +60,8 @@ export default function ResumeOptimizerClient({ previewMode = false }: ResumeOpt
     )
   }
 
-  const optimizedResume = (output?.optimizedResume as string) || ''
-  const coverLetter = (output?.coverLetter as string) || ''
-  const keywords = (output?.keywords as string[]) || []
-  const suggestions = (output?.suggestions as string[]) || []
+  // API returns { success: true, data: "markdown text" }
+  const resultText = typeof output?.data === 'string' ? output.data : ''
 
   return (
     <div className="space-y-5">
@@ -133,66 +130,20 @@ export default function ResumeOptimizerClient({ previewMode = false }: ResumeOpt
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl text-sm">{error}</div>
       )}
 
-      {output && (
-        <div className="space-y-4">
-          {keywords.length > 0 && (
-            <div className="bg-purple-50 border border-purple-200 rounded-2xl p-4">
-              <h4 className="text-sm font-semibold text-purple-700 mb-2">Recommended ATS Keywords</h4>
-              <div className="flex flex-wrap gap-2">
-                {keywords.map((kw, i) => (
-                  <span key={i} className="bg-white border border-purple-200 text-purple-700 px-3 py-1 rounded-full text-xs font-medium">{kw}</span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="bg-neutral-50 border border-neutral-200 rounded-3xl overflow-hidden">
-            <div className="flex border-b border-neutral-200">
-              <button
-                onClick={() => setActiveTab('resume')}
-                className={`flex-1 py-3 text-sm font-semibold transition-colors ${
-                  activeTab === 'resume' ? 'text-primary-700 bg-white border-b-2 border-primary-500' : 'text-neutral-500'
-                }`}
-              >
-                Optimized Resume
-              </button>
-              <button
-                onClick={() => setActiveTab('coverLetter')}
-                className={`flex-1 py-3 text-sm font-semibold transition-colors ${
-                  activeTab === 'coverLetter' ? 'text-primary-700 bg-white border-b-2 border-primary-500' : 'text-neutral-500'
-                }`}
-              >
-                Cover Letter
-              </button>
-            </div>
-            <div className="p-5">
-              <div className="flex justify-end mb-3">
-                <button
-                  onClick={() => navigator.clipboard.writeText(activeTab === 'resume' ? optimizedResume : coverLetter)}
-                  className="text-sm text-primary-600 hover:text-primary-700 font-medium"
-                >
-                  Copy
-                </button>
-              </div>
-              <div className="prose prose-sm max-w-none text-neutral-700 whitespace-pre-wrap leading-relaxed">
-                {activeTab === 'resume' ? optimizedResume : coverLetter}
-              </div>
-            </div>
+      {resultText && (
+        <div className="bg-neutral-50 border border-neutral-200 rounded-3xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-neutral-800">Optimized Resume & Cover Letter</h3>
+            <button
+              onClick={() => navigator.clipboard.writeText(resultText)}
+              className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+            >
+              Copy
+            </button>
           </div>
-
-          {suggestions.length > 0 && (
-            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
-              <h4 className="text-sm font-semibold text-amber-700 mb-2">Improvement Suggestions</h4>
-              <ul className="space-y-1.5">
-                {suggestions.map((s, i) => (
-                  <li key={i} className="text-sm text-amber-800 flex items-start gap-2">
-                    <span className="text-amber-500 mt-0.5">•</span>
-                    {s}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+          <div className="prose prose-sm max-w-none text-neutral-700 whitespace-pre-wrap leading-relaxed">
+            {resultText}
+          </div>
         </div>
       )}
     </div>

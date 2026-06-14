@@ -58,9 +58,8 @@ export default function ReadabilityOptimizerClient({ previewMode = false }: Read
     )
   }
 
-  const optimizedText = (output?.optimizedText as string) || ''
-  const readabilityScore = (output?.readabilityScore as string) || ''
-  const improvements = (output?.improvements as string[]) || []
+  // API returns { success: true, data: "markdown text" }
+  const resultText = typeof output?.data === 'string' ? output.data : ''
 
   return (
     <div className="space-y-5">
@@ -118,43 +117,20 @@ export default function ReadabilityOptimizerClient({ previewMode = false }: Read
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl text-sm">{error}</div>
       )}
 
-      {output && (
-        <div className="space-y-4">
-          {readabilityScore && (
-            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-center">
-              <span className="text-xs font-semibold text-emerald-600 block mb-1">Estimated Readability Score</span>
-              <span className="text-lg font-bold text-emerald-800">{readabilityScore}</span>
-            </div>
-          )}
-
-          <div className="bg-neutral-50 border border-neutral-200 rounded-3xl p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-neutral-800">Optimized Text</h3>
-              <button
-                onClick={() => navigator.clipboard.writeText(optimizedText)}
-                className="text-sm text-primary-600 hover:text-primary-700 font-medium"
-              >
-                Copy
-              </button>
-            </div>
-            <div className="prose prose-sm max-w-none text-neutral-700 whitespace-pre-wrap leading-relaxed">
-              {optimizedText}
-            </div>
+      {resultText && (
+        <div className="bg-neutral-50 border border-neutral-200 rounded-3xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-neutral-800">Optimized Text</h3>
+            <button
+              onClick={() => navigator.clipboard.writeText(resultText)}
+              className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+            >
+              Copy
+            </button>
           </div>
-
-          {improvements.length > 0 && (
-            <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4">
-              <h4 className="text-sm font-semibold text-blue-700 mb-2">Key Improvements</h4>
-              <ul className="space-y-1.5">
-                {improvements.map((imp, i) => (
-                  <li key={i} className="text-sm text-blue-800 flex items-start gap-2">
-                    <span className="text-blue-500 mt-0.5">✓</span>
-                    {imp}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+          <div className="prose prose-sm max-w-none text-neutral-700 whitespace-pre-wrap leading-relaxed">
+            {resultText}
+          </div>
         </div>
       )}
     </div>

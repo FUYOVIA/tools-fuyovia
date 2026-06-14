@@ -43,7 +43,7 @@ export default function ProductDescriptionClient({ previewMode = false }: Produc
       if (data.error) {
         setError(data.error)
       } else {
-        setOutput(data.description || 'No description generated.')
+        setOutput(data.data || data.description || 'No description generated.')
       }
     } catch {
       setError('Failed to generate description. Please try again.')

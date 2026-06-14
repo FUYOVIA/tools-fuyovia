@@ -42,7 +42,7 @@ export default function SeoBlogWriterClient({ previewMode = false }: SeoBlogWrit
       if (data.error) {
         setError(data.error)
       } else {
-        setOutput(data.blogPost || data.content || 'No content generated.')
+        setOutput(data.data || data.blogPost || data.content || 'No content generated.')
       }
     } catch {
       setError('Failed to generate blog post. Please try again.')

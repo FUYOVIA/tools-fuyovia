@@ -58,11 +58,7 @@ export default function HashtagGeneratorClient({ previewMode = false }: HashtagG
     )
   }
 
-  const highReach = (output?.highReach as string[]) || []
-  const mediumReach = (output?.mediumReach as string[]) || []
-  const niche = (output?.niche as string[]) || []
-  const recommended = (output?.recommended as string) || ''
-  const tips = (output?.tips as string) || ''
+  const resultText = typeof output?.data === 'string' ? output.data : ''
 
   return (
     <div className="space-y-5">
@@ -84,7 +80,6 @@ export default function HashtagGeneratorClient({ previewMode = false }: HashtagG
             <option value="tiktok">TikTok</option>
             <option value="twitter">Twitter/X</option>
             <option value="linkedin">LinkedIn</option>
-            <option value="youtube">YouTube</option>
           </select>
         </div>
         <div>
@@ -121,62 +116,20 @@ export default function HashtagGeneratorClient({ previewMode = false }: HashtagG
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl text-sm">{error}</div>
       )}
 
-      {output && (
-        <div className="space-y-4">
-          {recommended && (
-            <div className="bg-primary-50 border border-primary-200 rounded-3xl p-5">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-primary-800">Recommended Set</h3>
-                <button
-                  onClick={() => navigator.clipboard.writeText(recommended)}
-                  className="text-sm text-primary-600 hover:text-primary-700 font-medium"
-                >
-                  Copy All
-                </button>
-              </div>
-              <p className="text-sm text-primary-700 leading-relaxed break-words">{recommended}</p>
-            </div>
-          )}
-
-          {highReach.length > 0 && (
-            <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4">
-              <h4 className="text-sm font-semibold text-orange-700 mb-2">High Reach (Popular)</h4>
-              <div className="flex flex-wrap gap-2">
-                {highReach.map((tag, i) => (
-                  <span key={i} className="bg-white border border-orange-200 text-orange-700 px-3 py-1 rounded-full text-xs font-medium">{tag}</span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {mediumReach.length > 0 && (
-            <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4">
-              <h4 className="text-sm font-semibold text-blue-700 mb-2">Medium Reach (Balanced)</h4>
-              <div className="flex flex-wrap gap-2">
-                {mediumReach.map((tag, i) => (
-                  <span key={i} className="bg-white border border-blue-200 text-blue-700 px-3 py-1 rounded-full text-xs font-medium">{tag}</span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {niche.length > 0 && (
-            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
-              <h4 className="text-sm font-semibold text-emerald-700 mb-2">Niche (Targeted)</h4>
-              <div className="flex flex-wrap gap-2">
-                {niche.map((tag, i) => (
-                  <span key={i} className="bg-white border border-emerald-200 text-emerald-700 px-3 py-1 rounded-full text-xs font-medium">{tag}</span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {tips && (
-            <div className="bg-neutral-50 border border-neutral-100 rounded-2xl p-4">
-              <h4 className="text-sm font-semibold text-neutral-600 mb-2">Tips</h4>
-              <p className="text-sm text-neutral-600 leading-relaxed">{tips}</p>
-            </div>
-          )}
+      {resultText && (
+        <div className="bg-neutral-50 border border-neutral-200 rounded-3xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-neutral-800">Generated Hashtags & Strategy</h3>
+            <button
+              onClick={() => navigator.clipboard.writeText(resultText)}
+              className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+            >
+              Copy All
+            </button>
+          </div>
+          <div className="prose prose-sm max-w-none text-neutral-700 whitespace-pre-wrap leading-relaxed">
+            {resultText}
+          </div>
         </div>
       )}
     </div>
