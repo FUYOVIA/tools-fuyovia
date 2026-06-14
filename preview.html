@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FUYOVIA AI Tools - Embedded Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #0ea5e9;
+      --primary-dark: #0284c7;
+      --primary-light: #e0f2fe;
+      --warm: #e8a84b;
+      --warm-dark: #d97706;
+      --warm-light: #fdf6ec;
+      --bg: #fefdf8;
+      --surface: #ffffff;
+      --text: #1c1917;
+      --text-secondary: #78716c;
+      --border: #f5f5f4;
+      --shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06);
+      --shadow-hover: 0 10px 25px -5px rgba(0,0,0,0.08), 0 4px 6px -2px rgba(0,0,0,0.04);
+      --radius: 16px;
+    }
+    body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+    /* Hero */
+    .hero { text-align: center; padding: 48px 24px 32px; }
+    .hero h1 { font-size: 2.5rem; font-weight: 800; letter-spacing: -0.025em; background: linear-gradient(135deg, var(--primary), var(--primary-dark), var(--warm)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .hero p { margin-top: 12px; font-size: 1.1rem; color: var(--text-secondary); }
+
+    /* Section */
+    .section { padding: 32px 0; }
+    .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+    .section-icon { width: 36px; height: 36px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
+    .section-title { font-size: 1.5rem; font-weight: 700; color: var(--text); }
+    .section-subtitle { font-size: 0.85rem; color: var(--text-secondary); }
+
+    /* Tool Grid */
+    .tools-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
+    .tool-card { background: var(--surface); border-radius: var(--radius); padding: 24px; border: 1px solid var(--border); cursor: pointer; transition: all 0.2s ease; position: relative; }
+    .tool-card:hover { box-shadow: var(--shadow-hover); transform: translateY(-2px); border-color: transparent; }
+    .tool-card-icon { width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; margin-bottom: 14px; }
+    .tool-card h3 { font-size: 1rem; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+    .tool-card p { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; }
+    .tool-tag { position: absolute; top: 12px; right: 12px; padding: 2px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 600; }
+    .tag-free { background: #ecfdf5; color: #059669; }
+    .tag-popular { background: #fef3c7; color: #d97706; }
+    .tag-premium { background: var(--primary-light); color: var(--primary-dark); }
+    .credit-badge { display: inline-flex; align-items: center; gap: 4px; margin-top: 10px; padding: 3px 8px; border-radius: 6px; background: #faf5ff; color: #7c3aed; font-size: 0.75rem; font-weight: 500; }
+
+    /* Modal */
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+    .modal-overlay.active { display: flex; }
+    .modal { background: var(--surface); border-radius: 20px; max-width: 800px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 32px; position: relative; }
+    .modal-close { position: absolute; top: 16px; right: 16px; width: 32px; height: 32px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; }
+    .modal-close:hover { background: #f5f5f4; }
+    .modal h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 8px; }
+    .modal-desc { color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 24px; }
+
+    /* Tool UI Elements */
+    .input-group { margin-bottom: 16px; }
+    .input-group label { display: block; font-size: 0.85rem; font-weight: 500; color: var(--text); margin-bottom: 6px; }
+    .input-group input, .input-group textarea, .input-group select { width: 100%; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border); font-family: inherit; font-size: 0.9rem; background: var(--bg); transition: border-color 0.15s; }
+    .input-group input:focus, .input-group textarea:focus, .input-group select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(14,165,233,0.1); }
+    .input-group textarea { resize: vertical; min-height: 100px; }
+    .btn { padding: 10px 20px; border-radius: 10px; border: none; font-family: inherit; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+    .btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; }
+    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-warm { background: linear-gradient(135deg, var(--warm), var(--warm-dark)); color: white; }
+    .btn-warm:hover { opacity: 0.9; }
+    .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+    .btn-outline:hover { background: var(--bg); }
+    .btn-sm { padding: 6px 12px; font-size: 0.8rem; }
+    .result-box { background: var(--bg); border-radius: 12px; padding: 16px; margin-top: 16px; border: 1px solid var(--border); }
+    .result-box h4 { font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; }
+    .result-box pre { font-size: 0.85rem; white-space: pre-wrap; word-break: break-all; }
+
+    /* Divider */
+    .divider { border-top: 1px solid var(--border); margin: 16px 0; }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .hero h1 { font-size: 1.8rem; }
+      .tools-grid { grid-template-columns: 1fr; }
+      .modal { padding: 20px; margin: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Hero -->
+  <section class="hero">
+    <h1>AI Tools for Creators</h1>
+    <p>Free browser tools + Premium AI tools. No signup for free tools.</p>
+  </section>
+
+  <!-- Free Tools -->
+  <section class="section">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-icon" style="background:#ecfdf5">🆓</div>
+        <div>
+          <div class="section-title">Free Tools</div>
+          <div class="section-subtitle">No login required. Use instantly.</div>
+        </div>
+      </div>
+      <div class="tools-grid">
+        <div class="tool-card" onclick="showTool('image-compressor')">
+          <div class="tool-card-icon" style="background:linear-gradient(135deg,#34d399,#14b8a6)">🖼️</div>
+          <span class="tool-tag tag-popular">Popular</span>
+          <h3>Image Compressor</h3>
+          <p>Compress images in your browser. No upload needed. Keep quality, reduce file size instantly.</p>
+        </div>
+        <div class="tool-card" onclick="showTool('pdf-tools')">
+          <div class="tool-card-icon" style="background:linear-gradient(135deg,#f87171,#ec4899)">📄</div>
+          <span class="tool-tag tag-popular">Popular</span>
+          <h3>PDF Toolkit</h3>
+          <p>Merge, split, compress PDF files. 100% in-browser processing.</p>
+        </div>
+        <div class="tool-card" onclick="showTool('qr-generator')">
+          <div class="tool-card-icon" style="background:linear-gradient(135deg,#60a5fa,#6366f1)">📱</div>
+          <h3>QR Code Generator</h3>
+          <p>Generate customizable QR codes instantly. Download as PNG.</p>
+        </div>
+        <div class="tool-card" onclick="showTool('json-formatter')">
+          <div class="tool-card-icon" style="background:linear-gradient(135deg,#fbbf24,#f97316)">🧩</div>
+          <h3>JSON Formatter</h3>
+          <p>Format, validate and beautify JSON instantly.</p>
+        </div>
+        <div class="tool-card" onclick="showTool('password-generator')">
+          <div class="tool-card-icon" style="background:linear-gradient(135deg,#a78bfa,#a855f7)">🔐</div>
+          <h3>Password Generator</h3>
+          <p>Generate secure passwords with custom length and character types.</p>
+        </div>
+        <div class="tool-card" onclick="showTool('word-counter')">
+          <div class="tool-card-icon" style="background:linear-gradient(135deg,#38bdf8,#06b6d4)">📝</div>
+          <h3>Word Counter</h3>
+          <p>Count words, characters, sentences and paragraphs.</p>
+        </div>
+        <div class="tool-card" onclick="showTool('color-converter')">
+          <div class="tool-card-icon" style="background:linear-gradient(135deg,#f472b6,#f43f5e)">🎨</div>
+          <h3>Color Converter</h3>
+          <p>Convert between HEX, RGB, HSL. Copy any format instantly.</p>
+        </div>
+        <div class="tool-card" onclick="showTool('base64-tool')">
+          <div class="tool-card-icon" style="background:linear-gradient(135deg,#a3e635,#22c55e)">🔤</div>
+          <h3>Base64 Encode/Decode</h3>
+          <p>Encode or decode Base64 strings instantly.</p>
+        </div>
+        <div class="tool-card" onclick="showTool('markdown-preview')">
+          <div class="tool-card-icon" style="background:linear-gradient(135deg,#a3a3a3,#525252)">📄</div>
+          <h3>Markdown Preview</h3>
+          <p>Write Markdown on the left, preview on the right.</p>
+        </div>
+        <div class="tool-card" onclick="showTool('meta-tag-generator')">
+          <div class="tool-card-icon" style="background:linear-gradient(135deg,#d946ef,#ec4899)">🔍</div>
+          <h3>Meta Tag Generator</h3>
+          <p>Generate SEO-friendly meta tags for your website.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Divider -->
+  <div class="container"><div class="divider"></div></div>
+
+  <!-- Premium Tools -->
+  <section class="section">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-icon" style="background:#fef3c7">⭐</div>
+        <div>
+          <div class="section-title">Premium AI Tools</div>
+          <div class="section-subtitle">Powered by AI. Credits-based.</div>
+        </div>
+      </div>
+      <div class="tools-grid">
+        <div class="tool-card" onclick="showTool('ai-humanizer')">
+          <div class="tool-card-icon" style="background:linear-gradient(135deg,#a78bfa,#9333ea)">✨</div>
+          <span class="tool-tag tag-popular">Popular</span>
+          <h3>AI Humanizer</h3>
+          <p>Make AI-generated text sound natural and human.</p>
+          <div class="credit-badge">⚡ 2 credits</div>
+        </div>
+        <div class="tool-card" onclick="showTool('social-media-writer')">
+          <div class="tool-card-icon" style="background:linear-gradient(135deg,#f472b6,#e11d48)">📲</div>
+          <span class="tool-tag tag-popular">Popular</span>
+          <h3>Social Media Writer</h3>
+          <p>Generate optimized captions for Instagram, TikTok, LinkedIn, and Twitter.</p>
+          <div class="credit-badge">⚡ 1 credit</div>
+        </div>
+        <div class="tool-card" onclick="showTool('product-description')">
+          <div class="tool-card-icon" style="background:linear-gradient(135deg,#34d399,#0d9488)">🛍️</div>
+          <h3>Product Description Writer</h3>
+          <p>Generate compelling e-commerce product descriptions.</p>
+          <div class="credit-badge">⚡ 1 credit</div>
+        </div>
+        <div class="tool-card" onclick="showTool('email-copy')">
+          <div class="tool-card-icon" style="background:linear-gradient(135deg,#60a5fa,#4f46e5)">📧</div>
+          <h3>Email Copy Writer</h3>
+          <p>Write high-converting email marketing copy.</p>
+          <div class="credit-badge">⚡ 1 credit</div>
+        </div>
+        <div class="tool-card" onclick="showTool('seo-blog')">
+          <div class="tool-card-icon" style="background:linear-gradient(135deg,#fbbf24,#ea580c)">📊</div>
+          <span class="tool-tag tag-popular">Popular</span>
+          <h3>SEO Blog Writer</h3>
+          <p>Generate long-form SEO-optimized blog posts.</p>
+          <div class="credit-badge">⚡ 3 credits</div>
+        </div>
+        <div class="tool-card" onclick="showTool('video-script')">
+          <div class="tool-card-icon" style="background:linear-gradient(135deg,#f87171,#db2777)">🎬</div>
+          <h3>Video Script Writer</h3>
+          <p>Generate video scripts for TikTok, YouTube, and Shorts.</p>
+          <div class="credit-badge">⚡ 2 credits</div>
+        </div>
+        <div class="tool-card" onclick="showTool('ai-image')">
+          <div class="tool-card-icon" style="background:linear-gradient(135deg,#22d3ee,#2563eb)">🎨</div>
+          <h3>AI Image Generator</h3>
+          <p>Generate images from text descriptions.</p>
+          <div class="credit-badge">⚡ 5 credits</div>
+        </div>
+        <div class="tool-card" onclick="showTool('hashtag')">
+          <div class="tool-card-icon" style="background:linear-gradient(135deg,#4ade80,#059669)">🏷️</div>
+          <h3>Hashtag Generator</h3>
+          <p>Generate optimal hashtags for Instagram and TikTok.</p>
+          <div class="credit-badge">⚡ 1 credit</div>
+        </div>
+        <div class="tool-card" onclick="showTool('resume')">
+          <div class="tool-card-icon" style="background:linear-gradient(135deg,#94a3b8,#475569)">💼</div>
+          <h3>Resume & Cover Letter</h3>
+          <p>Optimize your resume and generate tailored cover letters.</p>
+          <div class="credit-badge">⚡ 2 credits</div>
+        </div>
+        <div class="tool-card" onclick="showTool('readability')">
+          <div class="tool-card-icon" style="background:linear-gradient(135deg,#facc15,#d97706)">📖</div>
+          <h3>Readability Optimizer</h3>
+          <p>Improve your writing clarity and flow.</p>
+          <div class="credit-badge">⚡ 1 credit</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tool Modal -->
+  <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+    <div class="modal" id="toolModal">
+      <button class="modal-close" onclick="hideModal()">✕</button>
+      <div id="toolContent"></div>
+    </div>
+  </div>
+
+  <script>
+    const toolContents = {
+      'image-compressor': `<h2>🖼️ Image Compressor</h2><p class="modal-desc">Compress images in your browser. No upload needed.</p>
+        <div class="input-group"><label>Select Image</label><input type="file" accept="image/*" id="imgFile" onchange="compressImg()"></div>
+        <div class="input-group"><label>Quality: <span id="qVal">80</span>%</label><input type="range" min="10" max="100" value="80" id="qSlider" oninput="document.getElementById('qVal').textContent=this.value"></div>
+        <div class="input-group"><label>Output Format</label><select><option>JPEG</option><option>PNG</option><option>WebP</option></select></div>
+        <button class="btn btn-primary" onclick="compressImg()">Compress</button>
+        <div class="result-box" id="imgResult" style="display:none"><h4>Result</h4><p id="imgStats"></p></div>`,
+
+      'password-generator': `<h2>🔐 Password Generator</h2><p class="modal-desc">Generate secure passwords instantly.</p>
+        <div class="input-group"><label>Length: <span id="pwLen">16</span></label><input type="range" min="8" max="64" value="16" id="pwSlider" oninput="document.getElementById('pwLen').textContent=this.value;genPw()"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+          <label style="font-size:0.85rem"><input type="checkbox" checked id="pwUpper"> Uppercase</label>
+          <label style="font-size:0.85rem"><input type="checkbox" checked id="pwLower"> Lowercase</label>
+          <label style="font-size:0.85rem"><input type="checkbox" checked id="pwNum"> Numbers</label>
+          <label style="font-size:0.85rem"><input type="checkbox" checked id="pwSym"> Symbols</label>
+        </div>
+        <button class="btn btn-primary" onclick="genPw()">Generate</button>
+        <div class="result-box"><h4>Your Password</h4><pre id="pwResult" style="font-size:1.1rem;word-break:break-all;color:var(--primary-dark)">Click Generate</pre></div>`,
+
+      'json-formatter': `<h2>🧩 JSON Formatter</h2><p class="modal-desc">Format, validate and beautify JSON.</p>
+        <div class="input-group"><label>Paste JSON</label><textarea id="jsonInput" rows="6" placeholder='{"key": "value"}'></textarea></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary" onclick="fmtJson(2)">Format (2 spaces)</button>
+          <button class="btn btn-outline" onclick="fmtJson(4)">Format (4 spaces)</button>
+          <button class="btn btn-outline" onclick="minJson()">Minify</button>
+        </div>
+        <div class="result-box" id="jsonResult" style="display:none"><h4>Result</h4><pre id="jsonOutput"></pre></div>`,
+
+      'word-counter': `<h2>📝 Word Counter</h2><p class="modal-desc">Real-time word and character counting.</p>
+        <div class="input-group"><label>Enter your text</label><textarea id="wcInput" rows="6" placeholder="Start typing or paste text..." oninput="countWords()"></textarea></div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-top:16px">
+          <div style="background:var(--primary-light);padding:12px;border-radius:10px;text-align:center"><div style="font-size:1.5rem;font-weight:700;color:var(--primary-dark)" id="wcWords">0</div><div style="font-size:0.75rem;color:var(--text-secondary)">Words</div></div>
+          <div style="background:#ecfdf5;padding:12px;border-radius:10px;text-align:center"><div style="font-size:1.5rem;font-weight:700;color:#059669" id="wcChars">0</div><div style="font-size:0.75rem;color:var(--text-secondary)">Characters</div></div>
+          <div style="background:#fef3c7;padding:12px;border-radius:10px;text-align:center"><div style="font-size:1.5rem;font-weight:700;color:#d97706" id="wcSentences">0</div><div style="font-size:0.75rem;color:var(--text-secondary)">Sentences</div></div>
+          <div style="background:#faf5ff;padding:12px;border-radius:10px;text-align:center"><div style="font-size:1.5rem;font-weight:700;color:#7c3aed" id="wcReadTime">0m</div><div style="font-size:0.75rem;color:var(--text-secondary)">Read Time</div></div>
+        </div>`,
+
+      'color-converter': `<h2>🎨 Color Converter</h2><p class="modal-desc">Convert between HEX, RGB, and HSL.</p>
+        <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
+          <div style="flex:1;min-width:200px">
+            <div class="input-group"><label>HEX</label><input type="text" id="hexInput" value="#0ea5e9" oninput="hexToRgb()"></div>
+            <div class="input-group"><label>RGB</label><input type="text" id="rgbInput" placeholder="14, 165, 233" oninput="rgbToHex()"></div>
+            <div class="input-group"><label>HSL</label><input type="text" id="hslInput" readonly></div>
+          </div>
+          <div style="width:120px;height:120px;border-radius:16px;border:2px solid var(--border);background:#0ea5e9" id="colorPreview"></div>
+        </div>`,
+
+      'base64-tool': `<h2>🔤 Base64 Encode/Decode</h2><p class="modal-desc">Encode or decode Base64 strings instantly.</p>
+        <div class="input-group"><label>Input Text</label><textarea id="b64Input" rows="4" placeholder="Enter text to encode or Base64 to decode"></textarea></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary" onclick="b64Encode()">Encode</button>
+          <button class="btn btn-outline" onclick="b64Decode()">Decode</button>
+        </div>
+        <div class="result-box" id="b64Result" style="display:none"><h4>Result</h4><pre id="b64Output"></pre></div>`,
+
+      'meta-tag-generator': `<h2>🔍 Meta Tag Generator</h2><p class="modal-desc">Generate SEO-friendly meta tags.</p>
+        <div class="input-group"><label>Page Title</label><input type="text" id="metaTitle" placeholder="My Awesome Page"></div>
+        <div class="input-group"><label>Description</label><textarea id="metaDesc" rows="3" placeholder="A brief description of your page..."></textarea></div>
+        <div class="input-group"><label>Keywords (comma separated)</label><input type="text" id="metaKeys" placeholder="keyword1, keyword2, keyword3"></div>
+        <div class="input-group"><label>URL</label><input type="text" id="metaUrl" placeholder="https://example.com/page"></div>
+        <button class="btn btn-primary" onclick="genMeta()">Generate Meta Tags</button>
+        <div class="result-box" id="metaResult" style="display:none"><h4>Generated HTML</h4><pre id="metaOutput"></pre></div>`,
+
+      'ai-humanizer': `<h2>✨ AI Humanizer</h2><p class="modal-desc">Make AI-generated text sound natural. <span class="tool-tag tag-premium">Premium — 2 credits</span></p>
+        <div class="input-group"><label>Paste AI-generated text</label><textarea id="humanInput" rows="5" placeholder="Paste your AI-generated text here..."></textarea></div>
+        <button class="btn btn-warm" onclick="showPremiumMsg()">Humanize Text</button>
+        <div class="result-box" style="margin-top:16px;background:#faf5ff;border-color:#e9d5ff"><p style="color:#7c3aed;font-size:0.9rem">🔒 This is a premium tool. Sign up and get 5 free daily credits to try it.</p></div>`,
+
+      'social-media-writer': `<h2>📲 Social Media Writer</h2><p class="modal-desc">Generate optimized social media captions. <span class="tool-tag tag-premium">Premium — 1 credit</span></p>
+        <div class="input-group"><label>Platform</label><select id="smPlatform"><option>Instagram</option><option>TikTok</option><option>LinkedIn</option><option>Twitter/X</option></select></div>
+        <div class="input-group"><label>Topic / Content</label><textarea id="smInput" rows="3" placeholder="What's your post about?"></textarea></div>
+        <button class="btn btn-warm" onclick="showPremiumMsg()">Generate Caption</button>`,
+
+      'product-description': `<h2>🛍️ Product Description Writer</h2><p class="modal-desc">Generate compelling e-commerce descriptions. <span class="tool-tag tag-premium">Premium — 1 credit</span></p>
+        <div class="input-group"><label>Product Name</label><input type="text" placeholder="e.g. Wireless Earbuds Pro"></div>
+        <div class="input-group"><label>Key Features</label><textarea rows="3" placeholder="List key features..."></textarea></div>
+        <button class="btn btn-warm" onclick="showPremiumMsg()">Generate Description</button>`,
+
+      'email-copy': `<h2>📧 Email Copy Writer</h2><p class="modal-desc">Write high-converting email copy. <span class="tool-tag tag-premium">Premium — 1 credit</span></p>
+        <div class="input-group"><label>Email Type</label><select><option>Welcome Email</option><option>Promotional</option><option>Newsletter</option><option>Follow-up</option></select></div>
+        <div class="input-group"><label>Product / Topic</label><input type="text" placeholder="What's this email about?"></div>
+        <button class="btn btn-warm" onclick="showPremiumMsg()">Generate Email</button>`,
+
+      'seo-blog': `<h2>📊 SEO Blog Writer</h2><p class="modal-desc">Generate SEO-optimized blog posts. <span class="tool-tag tag-premium">Premium — 3 credits</span></p>
+        <div class="input-group"><label>Blog Topic</label><input type="text" placeholder="e.g. How to Start a Dropshipping Business"></div>
+        <div class="input-group"><label>Target Keywords</label><input type="text" placeholder="dropshipping, ecommerce, online business"></div>
+        <div class="input-group"><label>Length</label><select><option>Short (800-1200 words)</option><option>Medium (1500-2000 words)</option><option>Long (2500-3500 words)</option></select></div>
+        <button class="btn btn-warm" onclick="showPremiumMsg()">Generate Blog Post</button>`,
+
+      'video-script': `<h2>🎬 Video Script Writer</h2><p class="modal-desc">Generate video scripts for social media. <span class="tool-tag tag-premium">Premium — 2 credits</span></p>
+        <div class="input-group"><label>Video Topic</label><input type="text" placeholder="e.g. 5 Tips for Better Sleep"></div>
+        <div class="input-group"><label>Platform</label><select><option>YouTube</option><option>TikTok</option><option>Instagram Reels</option></select></div>
+        <button class="btn btn-warm" onclick="showPremiumMsg()">Generate Script</button>`,
+
+      'ai-image': `<h2>🎨 AI Image Generator</h2><p class="modal-desc">Generate images from text. <span class="tool-tag tag-premium">Premium — 5 credits</span></p>
+        <div class="input-group"><label>Image Description</label><textarea rows="3" placeholder="Describe the image you want to generate..."></textarea></div>
+        <div class="input-group"><label>Style</label><select><option>Realistic</option><option>Illustration</option><option>Digital Art</option><option>Pixel Art</option></select></div>
+        <button class="btn btn-warm" onclick="showPremiumMsg()">Generate Image</button>`,
+
+      'hashtag': `<h2>🏷️ Hashtag Generator</h2><p class="modal-desc">Generate optimal hashtags. <span class="tool-tag tag-premium">Premium — 1 credit</span></p>
+        <div class="input-group"><label>Post Content</label><textarea rows="3" placeholder="What's your post about?"></textarea></div>
+        <div class="input-group"><label>Platform</label><select><option>Instagram</option><option>TikTok</option><option>LinkedIn</option></select></div>
+        <button class="btn btn-warm" onclick="showPremiumMsg()">Generate Hashtags</button>`,
+
+      'resume': `<h2>💼 Resume & Cover Letter</h2><p class="modal-desc">Optimize your resume and cover letters. <span class="tool-tag tag-premium">Premium — 2 credits</span></p>
+        <div class="input-group"><label>Target Role</label><input type="text" placeholder="e.g. Senior Product Manager"></div>
+        <div class="input-group"><label>Paste Your Resume</label><textarea rows="5" placeholder="Paste your current resume text..."></textarea></div>
+        <button class="btn btn-warm" onclick="showPremiumMsg()">Optimize Resume</button>`,
+
+      'readability': `<h2>📖 Readability Optimizer</h2><p class="modal-desc">Improve your writing clarity. <span class="tool-tag tag-premium">Premium — 1 credit</span></p>
+        <div class="input-group"><label>Paste your text</label><textarea rows="5" placeholder="Paste the text you want to improve..."></textarea></div>
+        <div class="input-group"><label>Target Audience</label><select><option>General</option><option>Academic</option><option>Business</option><option>Children</option></select></div>
+        <button class="btn btn-warm" onclick="showPremiumMsg()">Optimize Readability</button>`,
+
+      'qr-generator': `<h2>📱 QR Code Generator</h2><p class="modal-desc">Generate customizable QR codes instantly.</p>
+        <div class="input-group"><label>Content (URL, text, etc.)</label><input type="text" id="qrContent" placeholder="https://example.com" oninput="genQr()"></div>
+        <div class="input-group"><label>Size</label><select id="qrSize"><option>200x200</option><option>300x300</option><option>400x400</option></select></div>
+        <button class="btn btn-primary" onclick="genQr()">Generate QR Code</button>
+        <div style="text-align:center;margin-top:16px"><canvas id="qrCanvas" style="display:none"></canvas></div>`,
+
+      'pdf-tools': `<h2>📄 PDF Toolkit</h2><p class="modal-desc">Merge, split, and compress PDF files in your browser.</p>
+        <div class="input-group"><label>Select PDF Files</label><input type="file" accept=".pdf" multiple></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary">Merge PDFs</button>
+          <button class="btn btn-outline">Split PDF</button>
+          <button class="btn btn-outline">Compress PDF</button>
+        </div>`,
+
+      'markdown-preview': `<h2>📄 Markdown Preview</h2><p class="modal-desc">Write Markdown on the left, preview on the right.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div><label style="font-size:0.85rem;font-weight:500">Markdown Input</label><textarea rows="8" placeholder="# Hello World\n\nWrite **markdown** here..." style="font-family:monospace"></textarea></div>
+          <div><label style="font-size:0.85rem;font-weight:500">Preview</label><div style="background:var(--bg);border-radius:10px;padding:16px;min-height:200px;border:1px solid var(--border);font-size:0.9rem;color:var(--text-secondary)">Preview will appear here...</div></div>
+        </div>`,
+    };
+
+    function showTool(id) {
+      const content = toolContents[id];
+      if (content) {
+        document.getElementById('toolContent').innerHTML = content;
+        document.getElementById('modalOverlay').classList.add('active');
+      }
+    }
+    function closeModal(e) { if (e.target === e.currentTarget) hideModal(); }
+    function hideModal() { document.getElementById('modalOverlay').classList.remove('active'); }
+    function showPremiumMsg() { alert('This is a premium tool. Sign up to get 5 free daily credits!'); }
+
+    // Password Generator
+    function genPw() {
+      const len = parseInt(document.getElementById('pwSlider').value);
+      let chars = '';
+      if (document.getElementById('pwUpper').checked) chars += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      if (document.getElementById('pwLower').checked) chars += 'abcdefghijklmnopqrstuvwxyz';
+      if (document.getElementById('pwNum').checked) chars += '0123456789';
+      if (document.getElementById('pwSym').checked) chars += '!@#$%^&*()_+-=[]{}|;:,.<>?';
+      if (!chars) { document.getElementById('pwResult').textContent = 'Select at least one option'; return; }
+      const arr = new Uint32Array(len);
+      crypto.getRandomValues(arr);
+      let pw = '';
+      for (let i = 0; i < len; i++) pw += chars[arr[i] % chars.length];
+      document.getElementById('pwResult').textContent = pw;
+    }
+
+    // JSON Formatter
+    function fmtJson(sp) {
+      try {
+        const obj = JSON.parse(document.getElementById('jsonInput').value);
+        document.getElementById('jsonOutput').textContent = JSON.stringify(obj, null, sp);
+        document.getElementById('jsonResult').style.display = 'block';
+      } catch(e) { alert('Invalid JSON: ' + e.message); }
+    }
+    function minJson() {
+      try {
+        const obj = JSON.parse(document.getElementById('jsonInput').value);
+        document.getElementById('jsonOutput').textContent = JSON.stringify(obj);
+        document.getElementById('jsonResult').style.display = 'block';
+      } catch(e) { alert('Invalid JSON: ' + e.message); }
+    }
+
+    // Word Counter
+    function countWords() {
+      const text = document.getElementById('wcInput').value;
+      const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+      const chars = text.length;
+      const sentences = text.trim() ? text.split(/[.!?]+/).filter(s => s.trim()).length : 0;
+      const readTime = Math.max(1, Math.ceil(words / 200));
+      document.getElementById('wcWords').textContent = words;
+      document.getElementById('wcChars').textContent = chars;
+      document.getElementById('wcSentences').textContent = sentences;
+      document.getElementById('wcReadTime').textContent = readTime + 'm';
+    }
+
+    // Color Converter
+    function hexToRgb() {
+      const hex = document.getElementById('hexInput').value.replace('#', '');
+      if (hex.length === 6) {
+        const r = parseInt(hex.substr(0,2),16), g = parseInt(hex.substr(2,2),16), b = parseInt(hex.substr(4,2),16);
+        document.getElementById('rgbInput').value = `${r}, ${g}, ${b}`;
+        document.getElementById('colorPreview').style.background = '#' + hex;
+        // Simple HSL calc
+        const rn=r/255,gn=g/255,bn=b/255;
+        const max=Math.max(rn,gn,bn),min=Math.min(rn,gn,bn);
+        let h=0,s=0,l=(max+min)/2;
+        if(max!==min){const d=max-min;s=l>0.5?d/(2-max-min):d/(max+min);switch(max){case rn:h=((gn-bn)/d+(gn<bn?6:0))/6;break;case gn:h=((bn-rn)/d+2)/6;break;case bn:h=((rn-gn)/d+4)/6;break;}}
+        document.getElementById('hslInput').value = `${Math.round(h*360)}, ${Math.round(s*100)}%, ${Math.round(l*100)}%`;
+      }
+    }
+
+    // Base64
+    function b64Encode() {
+      const r = btoa(unescape(encodeURIComponent(document.getElementById('b64Input').value)));
+      document.getElementById('b64Output').textContent = r;
+      document.getElementById('b64Result').style.display = 'block';
+    }
+    function b64Decode() {
+      try {
+        const r = decodeURIComponent(escape(atob(document.getElementById('b64Input').value)));
+        document.getElementById('b64Output').textContent = r;
+        document.getElementById('b64Result').style.display = 'block';
+      } catch(e) { alert('Invalid Base64 string'); }
+    }
+
+    // Meta Tag Generator
+    function genMeta() {
+      const t = document.getElementById('metaTitle').value;
+      const d = document.getElementById('metaDesc').value;
+      const k = document.getElementById('metaKeys').value;
+      const u = document.getElementById('metaUrl').value;
+      let html = `<title>${t}</title>\n`;
+      html += `<meta name="description" content="${d}" />\n`;
+      if (k) html += `<meta name="keywords" content="${k}" />\n`;
+      html += `<meta property="og:title" content="${t}" />\n`;
+      html += `<meta property="og:description" content="${d}" />\n`;
+      if (u) html += `<meta property="og:url" content="${u}" />\n`;
+      html += `<meta property="og:type" content="website" />\n`;
+      if (u) html += `<link rel="canonical" href="${u}" />`;
+      document.getElementById('metaOutput').textContent = html;
+      document.getElementById('metaResult').style.display = 'block';
+    }
+  </script>
+</body>
+</html>

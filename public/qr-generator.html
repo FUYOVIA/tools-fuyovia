@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QR Code Generator - Free Tool | FUYOVIA</title>
+<style>
+  * { box-sizing: border-box; margin:0; padding:0; }
+  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #fefdf8; color: #292524; padding: 20px; }
+  .container { max-width: 800px; margin: 0 auto; }
+  .header { display: flex; align-items: center; gap: 12px; padding: 16px 0; border-bottom: 1px solid #e7e5e4; margin-bottom: 32px; }
+  .header a { color: #a8a29e; text-decoration: none; display: flex; align-items: center; }
+  .header .title { font-size: 18px; font-weight: 700; color: #1c1917; }
+  .header .badge { font-size: 11px; font-weight: 700; color: #059669; text-transform: uppercase; letter-spacing: 0.5px; }
+  .main-card { background: #fff; border: 1px solid #e7e5e4; border-radius: 20px; padding: 32px; margin-bottom: 24px; }
+  .form-group { margin-bottom: 20px; }
+  .form-group label { display: block; font-size: 12px; font-weight: 700; color: #78716c; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.3px; }
+  .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 12px 16px; border: 2px solid #e7e5e4; border-radius: 12px; font-size: 15px; color: #1c1917; background: #fafaf9; transition: border-color 0.2s; font-family: inherit; }
+  .form-group input:focus, .form-group textarea:focus, .form-group select:focus { outline: none; border-color: #0ea5e9; background: #fff; }
+  .form-group textarea { resize: vertical; min-height: 80px; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .generate-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #0ea5e9, #0284c7); color: #fff; border: none; border-radius: 16px; font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+  .generate-btn:hover { box-shadow: 0 4px 16px rgba(14,165,233,0.3); }
+  .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .qr-result { text-align: center; padding: 32px; background: #fafaf9; border-radius: 16px; margin-top: 24px; }
+  .qr-canvas { display: block; margin: 0 auto 20px; }
+  .download-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .dl-btn { padding: 10px 20px; border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer; border: none; transition: all 0.2s; }
+  .dl-btn.png { background: #0ea5e9; color: #fff; }
+  .dl-btn.svg { background: #8b5cf6; color: #fff; }
+  .error { padding: 12px 16px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; color: #dc2626; font-size: 14px; margin-top: 16px; }
+  @media (max-width: 600px) {
+    .row { grid-template-columns: 1fr; }
+  }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <a href="/">← Back</a>
+    <span style="font-size:24px;">📱</span>
+    <div>
+      <div class="title">QR Code Generator</div>
+      <div class="badge">Free Tool</div>
+    </div>
+  </div>
+
+  <div class="main-card">
+    <div class="form-group">
+      <label>Content (URL or Text)</label>
+      <textarea id="qrContent" placeholder="https://example.com or any text..."></textarea>
+    </div>
+    <div class="row">
+      <div class="form-group">
+        <label>Size (px)</label>
+        <input type="number" id="qrSize" value="256" min="128" max="1024" step="32">
+      </div>
+      <div class="form-group">
+        <label>Error Correction</label>
+        <select id="qrEC">
+          <option value="L">Low (7%)</option>
+          <option value="M" selected>Medium (15%)</option>
+          <option value="Q">Quartile (25%)</option>
+          <option value="H">High (30%)</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div class="form-group">
+        <label>Foreground Color</label>
+        <input type="color" id="qrFg" value="#1c1917" style="height:48px;padding:8px;cursor:pointer;">
+      </div>
+      <div class="form-group">
+        <label>Background Color</label>
+        <input type="color" id="qrBg" value="#ffffff" style="height:48px;padding:8px;cursor:pointer;">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Logo (Optional)</label>
+      <input type="file" id="qrLogo" accept="image/*" style="padding:8px;border:2px dashed #e7e5e4;border-radius:12px;background:#fafaf9;cursor:pointer;">
+      <div style="font-size:12px;color:#a8a29e;margin-top:6px;">Upload a small logo to embed in the center</div>
+    </div>
+    <button class="generate-btn" id="genBtn">📱 Generate QR Code</button>
+    <div class="error" id="errorBox" style="display:none;"></div>
+    <div class="qr-result" id="resultBox" style="display:none;">
+      <canvas id="qrCanvas" class="qr-canvas"></canvas>
+      <div class="download-btns">
+        <button class="dl-btn png" id="dlPng">Download PNG</button>
+        <button class="dl-btn svg" id="dlSvg">Download SVG</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  if (typeof QRCode === 'undefined') {
+    document.getElementById('errorBox').style.display = 'block';
+    document.getElementById('errorBox').textContent = 'QR Code library failed to load. Please refresh.';
+    return;
+  }
+
+  let currentSvg = '';
+
+  document.getElementById('genBtn').addEventListener('click', () => {
+    const content = document.getElementById('qrContent').value.trim();
+    if (!content) {
+      showError('Please enter a URL or text content');
+      return;
+    }
+
+    const size = parseInt(document.getElementById('qrSize').value) || 256;
+    const ec = document.getElementById('qrEC').value;
+    const fg = document.getElementById('qrFg').value;
+    const bg = document.getElementById('qrBg').value;
+
+    document.getElementById('errorBox').style.display = 'none';
+    document.getElementById('genBtn').disabled = true;
+    document.getElementById('genBtn').textContent = 'Generating...';
+
+    const ecMap = { L: 0, M: 1, Q: 2, H: 3 };
+
+    const canvas = document.getElementById('qrCanvas');
+    canvas.width = size;
+    canvas.height = size;
+
+    try {
+      QRCode.toCanvas(canvas, content, {
+        width: size,
+        margin: 2,
+        color: { dark: fg, light: bg },
+        errorCorrectionLevel: ec
+      }, (err) => {
+        if (err) {
+          showError('Failed to generate QR code: ' + err.message);
+          resetBtn();
+          return;
+        }
+
+        // Generate SVG string for download
+        QRCode.toString(content, {
+          type: 'svg',
+          width: size,
+          margin: 2,
+          color: { dark: fg, light: bg },
+          errorCorrectionLevel: ec
+        }, (err2, svg) => {
+          if (!err2) currentSvg = svg;
+        });
+
+        document.getElementById('resultBox').style.display = 'block';
+        resetBtn();
+      });
+    } catch(e) {
+      showError('Error: ' + e.message);
+      resetBtn();
+    }
+  });
+
+  document.getElementById('dlPng').addEventListener('click', () => {
+    const canvas = document.getElementById('qrCanvas');
+    const a = document.createElement('a');
+    a.download = 'qrcode.png';
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+  });
+
+  document.getElementById('dlSvg').addEventListener('click', () => {
+    if (!currentSvg) return;
+    const blob = new Blob([currentSvg], { type: 'image/svg+xml' });
+    const a = document.createElement('a');
+    a.download = 'qrcode.svg';
+    a.href = URL.createObjectURL(blob);
+    a.click();
+  });
+
+  function showError(msg) {
+    const el = document.getElementById('errorBox');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+  function resetBtn() {
+    const btn = document.getElementById('genBtn');
+    btn.disabled = false;
+    btn.textContent = '📱 Generate QR Code';
+  }
+})();
+</script>
+</body>
+</html>
