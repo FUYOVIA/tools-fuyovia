@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { authenticateAndCheckCredits, deductCredits } from '@/lib/api-helpers'
+import { authenticateAndCheckCredits, deductCredits, generateImage } from '@/lib/api-helpers'
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,11 +14,6 @@ export async function POST(request: NextRequest) {
 
     if (!prompt || prompt.trim().length < 3) {
       return NextResponse.json({ error: 'Please provide an image description (at least 3 characters)' }, { status: 400 })
-    }
-
-    const apiKey = process.env.OPENAI_API_KEY
-    if (!apiKey || apiKey === 'sk-placeholder') {
-      return NextResponse.json({ error: 'AI Image API not configured. Please set OPENAI_API_KEY in .env.local' }, { status: 500 })
     }
 
     // Build enhanced prompt based on style and mood
@@ -48,51 +43,26 @@ Mood/Atmosphere: ${moodEnhancements[selectedMood]}
 
 Quality: Masterpiece quality, highly detailed, professional composition, rule of thirds. NO text, NO watermarks, NO blurry, NO distorted.`
 
+    // Kolors supports: 1024x1024, 768x1344, 864x1152, 1344x768, 1152x864
     const sizeMap: Record<string, string> = {
       '1024x1024': '1024x1024',
-      '1024x1792': '1024x1792',
-      '1792x1024': '1792x1024',
+      '1024x1792': '768x1344',
+      '1792x1024': '1344x768',
     }
     const selectedSize = sizeMap[size] || '1024x1024'
 
-    const response = await fetch('https://api.openai.com/v1/images/generations', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: 'dall-e-3',
-        prompt: enhancedPrompt,
-        n: 1,
-        size: selectedSize,
-        quality: 'standard',
-        style: 'natural',
-      }),
-    })
+    const result = await generateImage(enhancedPrompt, 'Kwai-Kolors/Kolors', selectedSize)
 
-    if (!response.ok) {
-      const err = await response.json()
-      return NextResponse.json(
-        { error: `Image generation failed: ${err.error?.message || 'Unknown error'}` },
-        { status: response.status }
-      )
-    }
-
-    const data = await response.json()
-    const imageUrl = data.data?.[0]?.url
-    const revisedPrompt = data.data?.[0]?.revised_prompt
-
-    if (!imageUrl) {
-      return NextResponse.json({ error: 'Failed to generate image - no URL returned' }, { status: 500 })
+    if ('error' in result) {
+      return NextResponse.json({ error: result.error }, { status: 500 })
     }
 
     await deductCredits(auth.userId, 'ai-image-generator')
 
     return NextResponse.json({
       success: true,
-      imageUrl,
-      revisedPrompt,
+      imageUrl: result.imageUrl,
+      revisedPrompt: result.revisedPrompt,
       prompt: enhancedPrompt,
       style: selectedStyle,
       size: selectedSize,

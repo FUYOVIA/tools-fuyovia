@@ -149,8 +149,24 @@ export async function deductCredits(
   }
 }
 
+// SiliconFlow API configuration (OpenAI-compatible)
+const AI_API_BASE_URL = process.env.AI_API_BASE_URL || 'https://api.siliconflow.cn/v1'
+const AI_API_KEY = process.env.SILICONFLOW_API_KEY || process.env.OPENAI_API_KEY
+
+// Model mapping: logical name -> actual model ID
+const MODEL_MAP: Record<string, string> = {
+  'gpt-4o-mini': 'deepseek-ai/DeepSeek-V3-0324',      // Fast, cheap text model
+  'gpt-4o': 'deepseek-ai/DeepSeek-V3-0324',            // High quality text model
+  'dall-e-3': 'Kwai-Kolors/Kolors',                     // Image generation (FREE)
+}
+
+function resolveModel(model: string): string {
+  return MODEL_MAP[model] || model
+}
+
 /**
- * Call OpenAI API with consistent error handling.
+ * Call AI API (SiliconFlow, OpenAI-compatible format).
+ * Supports both SiliconFlow and OpenAI backends.
  */
 export async function callOpenAI(
   systemPrompt: string,
@@ -159,20 +175,22 @@ export async function callOpenAI(
   temperature: number = 0.7,
   maxTokens: number = 2000
 ): Promise<{ content: string; usage?: Record<string, number> } | { error: string }> {
-  const apiKey = process.env.OPENAI_API_KEY
+  const apiKey = AI_API_KEY
   if (!apiKey || apiKey === 'sk-placeholder') {
-    return { error: 'AI API not configured. Please contact support.' }
+    return { error: 'AI API not configured. Please set SILICONFLOW_API_KEY or OPENAI_API_KEY.' }
   }
 
+  const resolvedModel = resolveModel(model)
+
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch(`${AI_API_BASE_URL}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model,
+        model: resolvedModel,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
@@ -184,7 +202,7 @@ export async function callOpenAI(
 
     if (!response.ok) {
       const err = await response.json()
-      return { error: `AI API error: ${err.error?.message || 'Unknown error'}` }
+      return { error: `AI API error: ${err.error?.message || err.message || 'Unknown error'}` }
     }
 
     const data = await response.json()
@@ -193,7 +211,56 @@ export async function callOpenAI(
       usage: data.usage,
     }
   } catch (err) {
-    console.error('OpenAI API call failed:', err)
+    console.error('AI API call failed:', err)
     return { error: 'Failed to call AI API. Please try again.' }
+  }
+}
+
+/**
+ * Generate image using SiliconFlow API.
+ * Uses Kolors model (free) by default.
+ */
+export async function generateImage(
+  prompt: string,
+  model: string = 'Kwai-Kolors/Kolors',
+  size: string = '1024x1024'
+): Promise<{ imageUrl: string; revisedPrompt?: string } | { error: string }> {
+  const apiKey = AI_API_KEY
+  if (!apiKey || apiKey === 'sk-placeholder') {
+    return { error: 'AI API not configured. Please set SILICONFLOW_API_KEY.' }
+  }
+
+  try {
+    const response = await fetch(`${AI_API_BASE_URL}/images/generations`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        prompt,
+        n: 1,
+        size,
+      }),
+    })
+
+    if (!response.ok) {
+      const err = await response.json()
+      return { error: `Image generation failed: ${err.error?.message || err.message || 'Unknown error'}` }
+    }
+
+    const data = await response.json()
+    const imageUrl = data.images?.[0]?.url || data.data?.[0]?.url
+    const revisedPrompt = data.images?.[0]?.revised_prompt || data.data?.[0]?.revised_prompt
+
+    if (!imageUrl) {
+      return { error: 'Failed to generate image - no URL returned' }
+    }
+
+    return { imageUrl, revisedPrompt }
+  } catch (err) {
+    console.error('Image generation failed:', err)
+    return { error: 'Failed to generate image. Please try again.' }
   }
 }
