@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useCallback } from 'react'
+import QRCode from 'qrcode'
 
 export default function QrGeneratorClient() {
   const [text, setText] = useState('https://fuyovia.com')
@@ -8,67 +9,102 @@ export default function QrGeneratorClient() {
   const [color, setColor] = useState('#0ea5e9')
   const [bgColor, setBgColor] = useState('#ffffff')
   const [qrDataUrl, setQrDataUrl] = useState('')
+  const [svgString, setSvgString] = useState('')
+  const [isGenerating, setIsGenerating] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
-  const generateQr = () => {
+  const generateQr = useCallback(async () => {
     if (!text.trim()) return
 
-    // 使用 qrcode.js 的逻辑 - 纯前端实现
-    // 这里用 Canvas 实现一个简单的 QR Code 占位
-    // 实际生产环境会用 qrcode 库，这里展示 UI
-    const canvas = canvasRef.current
-    if (!canvas) return
+    setIsGenerating(true)
+    try {
+      // 生成 Canvas QR 码（用于 PNG 下载和预览）
+      const canvas = canvasRef.current
+      if (!canvas) return
 
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
+      await QRCode.toCanvas(canvas, text, {
+        width: size,
+        margin: 2,
+        color: {
+          dark: color,
+          light: bgColor,
+        },
+        errorCorrectionLevel: 'M',
+      })
 
-    canvas.width = size
-    canvas.height = size
+      // 生成 data URL 用于预览
+      const dataUrl = canvas.toDataURL('image/png')
+      setQrDataUrl(dataUrl)
 
-    // 背景
-    ctx.fillStyle = bgColor
-    ctx.fillRect(0, 0, size, size)
-
-    // 模拟 QR 码图案（实际应该用 qrcode 库）
-    ctx.fillStyle = color
-    const cellSize = size / 25
-    
-    // 定位标记（左上、右上、左下）
-    const drawFinder = (x: number, y: number) => {
-      for (let i = 0; i < 7; i++) {
-        for (let j = 0; j < 7; j++) {
-          if (i === 0 || i === 6 || j === 0 || j === 6 ||
-              (i >= 2 && i <= 4 && j >= 2 && j <= 4)) {
-            ctx.fillRect(x + i * cellSize, y + j * cellSize, cellSize, cellSize)
-          }
-        }
-      }
+      // 生成 SVG 字符串（用于 SVG 下载）
+      const svg = await QRCode.toString(text, {
+        type: 'svg',
+        width: size,
+        margin: 2,
+        color: {
+          dark: color,
+          light: bgColor,
+        },
+        errorCorrectionLevel: 'M',
+      })
+      setSvgString(svg)
+    } catch (err) {
+      console.error('QR Code generation failed:', err)
+      alert('Failed to generate QR code. Please check your input.')
+    } finally {
+      setIsGenerating(false)
     }
+  }, [text, size, color, bgColor])
 
-    drawFinder(0, 0)
-    drawFinder(18 * cellSize, 0)
-    drawFinder(0, 18 * cellSize)
+  const downloadQr = useCallback((format: 'png' | 'svg') => {
+    if (!qrDataUrl && !svgString) return
 
-    // 随机数据模块（模拟）
-    for (let i = 0; i < 25; i++) {
-      for (let j = 0; j < 25; j++) {
-        if ((i < 7 && j < 7) || (i >= 18 && j < 7) || (i < 7 && j >= 18)) continue
-        if (Math.random() > 0.5) {
-          ctx.fillRect(i * cellSize, j * cellSize, cellSize, cellSize)
-        }
-      }
-    }
-
-    setQrDataUrl(canvas.toDataURL('image/png'))
-  }
-
-  const downloadQr = (format: 'png' | 'svg') => {
-    if (!qrDataUrl) return
     const link = document.createElement('a')
-    link.href = qrDataUrl
-    link.download = `qrcode_${Date.now()}.png`
+    
+    if (format === 'png') {
+      link.href = qrDataUrl
+      link.download = `qrcode_${Date.now()}.png`
+    } else {
+      const blob = new Blob([svgString], { type: 'image/svg+xml' })
+      link.href = URL.createObjectURL(blob)
+      link.download = `qrcode_${Date.now()}.svg`
+    }
+    
+    document.body.appendChild(link)
     link.click()
-  }
+    document.body.removeChild(link)
+
+    // 清理 URL object
+    if (format === 'svg') {
+      setTimeout(() => URL.revokeObjectURL(link.href), 100)
+    }
+  }, [qrDataUrl, svgString])
+
+  const copyToClipboard = useCallback(async () => {
+    if (!qrDataUrl) return
+
+    try {
+      // 将 Canvas 转换为 Blob
+      const canvas = canvasRef.current
+      if (!canvas) return
+
+      const blob = await new Promise<Blob | null>((resolve) => {
+        canvas.toBlob(resolve, 'image/png')
+      })
+
+      if (blob) {
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            'image/png': blob,
+          }),
+        ])
+        alert('QR code image copied to clipboard!')
+      }
+    } catch (err) {
+      console.error('Failed to copy image:', err)
+      alert('Failed to copy image. Try downloading instead.')
+    }
+  }, [qrDataUrl])
 
   return (
     <div className="max-w-2xl mx-auto animate-fade-in">
@@ -139,9 +175,10 @@ export default function QrGeneratorClient() {
 
             <button
               onClick={generateQr}
-              className="w-full btn-primary py-3 rounded-2xl font-semibold"
+              disabled={isGenerating || !text.trim()}
+              className="w-full btn-primary py-3 rounded-2xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              📱 Generate QR Code
+              {isGenerating ? '⏳ Generating...' : '📱 Generate QR Code'}
             </button>
           </div>
         </div>
@@ -151,26 +188,32 @@ export default function QrGeneratorClient() {
           <p className="text-xs font-bold text-neutral-500 mb-4 uppercase tracking-wider">Preview</p>
           <div className="flex items-center justify-center min-h-48 bg-neutral-50 rounded-2xl border border-neutral-100 p-6">
             {qrDataUrl ? (
-              <img src={qrDataUrl} alt="QR Code" className="animate-fade-in" style={{ width: Math.min(size, 256), height: Math.min(size, 256) }} />
+              <img src={qrDataUrl} alt="QR Code" className="animate-fade-in max-w-full h-auto" style={{ maxWidth: Math.min(size, 400) }} />
             ) : (
               <div className="text-center text-neutral-400">
                 <span className="text-4xl mb-3 block">📱</span>
-                <p className="text-sm">Click "Generate" to create your QR code</p>
+                <p className="text-sm">Enter content and click "Generate" to create your QR code</p>
               </div>
             )}
           </div>
 
           {qrDataUrl && (
-            <div className="flex items-center gap-3 mt-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-6">
               <button
                 onClick={() => downloadQr('png')}
-                className="flex-1 btn-primary py-2.5 rounded-2xl font-semibold text-sm"
+                className="btn-primary py-2.5 rounded-2xl font-semibold text-sm"
               >
                 ⬇️ Download PNG
               </button>
               <button
-                onClick={() => { navigator.clipboard.writeText(qrDataUrl); alert('QR code copied to clipboard!') }}
-                className="flex-1 btn-outline py-2.5 rounded-2xl font-semibold text-sm"
+                onClick={() => downloadQr('svg')}
+                className="btn-primary py-2.5 rounded-2xl font-semibold text-sm bg-neutral-800 hover:bg-neutral-900"
+              >
+                ⬇️ Download SVG
+              </button>
+              <button
+                onClick={copyToClipboard}
+                className="btn-outline py-2.5 rounded-2xl font-semibold text-sm"
               >
                 📋 Copy Image
               </button>
