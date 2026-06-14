@@ -242,3 +242,23 @@ a {
 .shadow-soft { box-shadow: 0 2px 12px rgba(0,0,0,0.04); }
 .shadow-medium { box-shadow: 0 8px 30px rgba(0,0,0,0.07); }
 .shadow-strong { box-shadow: 0 16px 48px rgba(0,0,0,0.10); }
+
+/* ===== INPUT FIELD ===== */
+.input-field {
+  @apply w-full px-4 py-3 rounded-xl border-2 border-neutral-200 bg-white text-neutral-800 
+    placeholder:text-neutral-400 text-sm font-medium
+    focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100 
+    transition-all duration-200;
+}
+
+/* ===== OUTLINE BUTTON ===== */
+.btn-outline {
+  @apply px-6 py-2.5 rounded-xl font-semibold border-2 border-neutral-200 text-neutral-600 
+    bg-white hover:border-primary-300 hover:text-primary-700 hover:bg-primary-50/50
+    transition-all duration-200;
+}
+
+/* ===== FADE IN ANIMATION ===== */
+.animate-fade-in {
+  animation: fadeInUp 0.4s ease-out forwards;
+}

@@ -137,13 +137,12 @@ export default function ProductDescriptionClient({ previewMode = false }: Produc
               onClick={() => navigator.clipboard.writeText(output)}
               className="text-sm text-primary-600 hover:text-primary-700 font-medium"
             >
-              Copy HTML
+              Copy
             </button>
           </div>
-          <div
-            className="prose prose-sm max-w-none text-neutral-700 leading-relaxed"
-            dangerouslySetInnerHTML={{ __html: output }}
-          />
+          <div className="prose prose-sm max-w-none text-neutral-700 whitespace-pre-wrap leading-relaxed">
+            {output}
+          </div>
         </div>
       )}
     </div>
