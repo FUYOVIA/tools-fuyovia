@@ -153,11 +153,11 @@ export async function deductCredits(
 const AI_API_BASE_URL = process.env.AI_API_BASE_URL || 'https://api.siliconflow.cn/v1'
 const AI_API_KEY = process.env.SILICONFLOW_API_KEY || process.env.OPENAI_API_KEY
 
-// Model mapping: logical name -> actual model ID
+// Model mapping: logical name -> actual model ID on SiliconFlow
 const MODEL_MAP: Record<string, string> = {
-  'gpt-4o-mini': 'deepseek-ai/DeepSeek-V3-0324',      // Fast, cheap text model
-  'gpt-4o': 'deepseek-ai/DeepSeek-V3-0324',            // High quality text model
-  'dall-e-3': 'Kwai-Kolors/Kolors',                     // Image generation (FREE)
+  'gpt-4o-mini': 'deepseek-ai/DeepSeek-V3',             // Fast, cheap text model
+  'gpt-4o': 'deepseek-ai/DeepSeek-V3',                  // High quality text model
+  'dall-e-3': 'Kwai-Kolors/Kolors',                      // Image generation (FREE)
 }
 
 function resolveModel(model: string): string {
