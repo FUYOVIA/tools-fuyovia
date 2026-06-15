@@ -1,4 +1,6 @@
-{/* ============================================================
+'use client'
+
+/* ============================================================
   【社区页面】CommunityClient.tsx — FUYOVIA 社区论坛主组件
   ------------------------------------------------------------
   文件用途：社区讨论页的完整前端逻辑和 UI 渲染
@@ -7,15 +9,14 @@
   - 评论系统
   - 投票/点赞系统
   - 登录弹窗（邮箱 + Google/Facebook）
-  - 65 条内置种子数据（API 失败时自动降级显示）
+  - 65 条内置种子数据（合并显示，永不消失）
   - 大气 UI：全宽渐变 Hero、统计栏、Hot/New 徽章
+  - 2026-06-15 更新：真实数据 + 种子数据合并排序
 
   对应的页面路由：/community
   对应的 API 路由：/api/discussions /api/comments /api/vote
   最后更新：2026-06-15
-  ============================================================ */}
-
-'use client'
+  ============================================================ */
 
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/context/AuthContext'
@@ -599,58 +600,94 @@ export default function CommunityClient() {
 
   const PAGE_SIZE = 15
 
-  // Fetch discussions
+  // Fetch discussions — ALWAYS merge real + seed data
   const fetchDiscussions = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
+      // Always fetch ALL real discussions (client-side pagination after merge)
       const params = new URLSearchParams({
         category,
         sort,
-        limit: PAGE_SIZE.toString(),
-        offset: (page * PAGE_SIZE).toString(),
+        limit: '1000',
+        offset: '0',
       })
-      if (searchQuery) params.set('search', searchQuery)
-
       const res = await fetch(`/api/discussions?${params}`)
       const json = await res.json()
 
-      if (json.success && json.data && json.data.length > 0) {
-        setDiscussions(json.data)
-        setTotal(json.total || 0)
-      } else if (json.success && json.data && json.data.length === 0) {
-        // API returned empty — use filtered seed data
-        const seed = SEED_DATA()
-        const filtered = category !== 'all'
-          ? seed.filter(d => d.category === category)
-          : seed
-        const sorted = sort === 'popular'
-          ? [...filtered].sort((a, b) => b.votes_count - a.votes_count)
-          : filtered
-        setDiscussions(sorted.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE))
-        setTotal(filtered.length)
-      } else {
-        // API failed entirely — fall back to seed data
-        const seed = SEED_DATA()
-        const filtered = category !== 'all'
-          ? seed.filter(d => d.category === category)
-          : seed
-        const sorted = sort === 'popular'
-          ? [...filtered].sort((a, b) => b.votes_count - a.votes_count)
-          : filtered
-        setDiscussions(sorted.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE))
-        setTotal(filtered.length)
-      }
-    } catch {
-      // Network error or API down — use seed data as fallback
       const seed = SEED_DATA()
-      const filtered = category !== 'all'
+
+      // ALWAYS merge real + seed (never replace)
+      let merged: Discussion[] = []
+      if (json.success && json.data && Array.isArray(json.data)) {
+        merged = [...json.data, ...seed]
+      } else {
+        merged = [...seed]
+      }
+
+      // Deduplicate by ID (safety)
+      const seen = new Set<string>()
+      merged = merged.filter(d => {
+        if (seen.has(d.id)) return false
+        seen.add(d.id)
+        return true
+      })
+
+      // Filter by category
+      let filtered = category !== 'all'
+        ? merged.filter(d => d.category === category)
+        : merged
+
+      // Filter by search (client-side on merged data)
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase()
+        filtered = filtered.filter(d =>
+          d.title.toLowerCase().includes(q) ||
+          d.content.toLowerCase().includes(q)
+        )
+      }
+
+      // Sort: popular = by votes, latest = by date
+      if (sort === 'popular') {
+        filtered.sort((a, b) => (b.votes_count || 0) - (a.votes_count || 0))
+      } else {
+        filtered.sort((a, b) => {
+          const aTime = new Date(b.created_at).getTime()
+          const bTime = new Date(a.created_at).getTime()
+          return bTime - aTime
+        })
+      }
+
+      // Client-side pagination on merged array
+      const total = filtered.length
+      const paged = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
+
+      setDiscussions(paged)
+      setTotal(total)
+    } catch {
+      // Network error — fallback to seed only
+      const seed = SEED_DATA()
+      let filtered = category !== 'all'
         ? seed.filter(d => d.category === category)
         : seed
-      const sorted = sort === 'popular'
-        ? [...filtered].sort((a, b) => b.votes_count - a.votes_count)
-        : filtered
-      setDiscussions(sorted.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE))
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase()
+        filtered = filtered.filter(d =>
+          d.title.toLowerCase().includes(q) ||
+          d.content.toLowerCase().includes(q)
+        )
+      }
+      if (sort === 'popular') {
+        filtered.sort((a, b) => (b.votes_count || 0) - (a.votes_count || 0))
+      } else {
+        filtered.sort((a, b) => {
+          const aTime = new Date(b.created_at).getTime()
+          const bTime = new Date(a.created_at).getTime()
+          return bTime - aTime
+        })
+      }
+      const paged = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
+      setDiscussions(paged)
       setTotal(filtered.length)
     } finally {
       setLoading(false)
@@ -846,10 +883,25 @@ export default function CommunityClient() {
     return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
   }
 
-  // Stats calculation from seed data
+  // Stats calculation — always merge seed + real counts
   const allDiscussions = SEED_DATA()
+  const [realTotal, setRealTotal] = useState(0)
+
+  useEffect(() => {
+    // Fetch real discussion count from API (limit=1 to get total count efficiently)
+    fetch('/api/discussions?limit=1')
+      .then(r => r.json())
+      .then(json => {
+        if (json.success && typeof json.total === 'number') {
+          setRealTotal(json.total)
+        }
+      })
+      .catch(() => {})
+  }, [])
+
   const totalMembers = 1247
-  const totalDiscussionsCount = allDiscussions.length + 89
+  // Always show seed + real (merged model: never replace)
+  const totalDiscussionsCount = allDiscussions.length + realTotal
   const totalComments = allDiscussions.reduce((sum, d) => sum + d.comments_count, 0) + 156
   const activeToday = 38
 
