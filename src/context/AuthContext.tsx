@@ -56,12 +56,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .single()
 
       if (error) {
-        console.error('Failed to fetch profile:', error)
+        // users table might not exist yet — don't crash, just skip profile
+        console.warn('Profile table unavailable:', error.message)
         return
       }
       setProfile(data as UserProfile)
     } catch (err) {
-      console.error('Profile fetch error:', err)
+      // Network or config error — silently ignore for now
+      console.warn('Profile fetch skipped')
     }
   }, [])
 
@@ -75,11 +77,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
       if (session?.user) {
-        fetchProfile(session.user.id)
+        fetchProfile(session.user.id).catch(() => {}) // profile is optional, don't block auth
       }
       setLoading(false)
     }).catch(() => {
-      // Supabase not configured — treat as signed out
+      // Supabase not configured or network error — treat as signed out, don't block UI
       setUser(null)
       setProfile(null)
       setLoading(false)
@@ -89,7 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       async (_event, session) => {
         setUser(session?.user ?? null)
         if (session?.user) {
-          await fetchProfile(session.user.id)
+          await fetchProfile(session.user.id).catch(() => {})
         } else {
           setProfile(null)
         }
@@ -104,16 +106,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) {
       // Map raw Supabase errors to user-friendly messages
-      if (error.message.includes('Invalid API key') || error.message.includes('api_key'))
+      const msg = error.message || ''
+      if (msg.includes('Invalid API key') || msg.includes('api_key'))
         return { error: 'Authentication service is temporarily unavailable. Please try again later.' }
-      if (error.message.includes('Invalid login credentials') || error.message === 'Invalid email or password')
+      if (msg.includes('Failed to fetch') || msg.includes('fetch') || msg.includes('network') || msg.includes('NetworkError') || msg.includes('Load failed'))
+        return { error: 'Unable to connect to authentication server. Please check your internet connection and try again.' }
+      if (msg.includes('Invalid login credentials') || msg === 'Invalid email or password')
         return { error: 'Invalid email or password. Please check and try again.' }
-      if (error.message.includes('Email not confirmed'))
+      if (msg.includes('Email not confirmed'))
         return { error: 'Please confirm your email before signing in.' }
-      if (error.message.includes('password'))
+      if (msg.includes('password'))
         return { error: 'Invalid email or password combination.' }
       // Generic fallback for other errors
-      return { error: error.message.length > 80 ? 'Sign in failed. Please try again.' : error.message }
+      return { error: msg.length > 80 ? 'Sign in failed. Please try again.' : msg }
     }
     return { error: null }
   }
@@ -128,14 +133,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })
     if (error) {
       // Map raw Supabase errors to user-friendly messages
-      if (error.message.includes('Invalid API key') || error.message.includes('api_key'))
+      const msg = error.message || ''
+      if (msg.includes('Invalid API key') || msg.includes('api_key'))
         return { error: 'Authentication service is temporarily unavailable. Please try again later.' }
-      if (error.message.includes('already registered') || error.message.includes('already been registered'))
+      if (msg.includes('Failed to fetch') || msg.includes('fetch') || msg.includes('network') || msg.includes('NetworkError') || msg.includes('Load failed'))
+        return { error: 'Unable to connect to authentication server. Please check your internet and try again.' }
+      if (msg.includes('already registered') || msg.includes('already been registered'))
         return { error: 'This email is already registered. Please sign in instead.' }
-      if (error.message.includes('password') || error.message.includes('Password'))
+      if (msg.includes('password') || msg.includes('Password'))
         return { error: 'Password must be at least 6 characters.' }
       // Generic fallback for other errors
-      return { error: error.message.length > 80 ? 'Registration failed. Please try again.' : error.message }
+      return { error: msg.length > 80 ? 'Registration failed. Please try again.' : msg }
     }
     return { error: null }
   }
