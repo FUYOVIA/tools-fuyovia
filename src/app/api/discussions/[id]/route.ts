@@ -1,16 +1,32 @@
+{/* ============================================================
+  【社区API】route.ts — 单条讨论 API 路由（GET/PUT/DELETE）
+  ------------------------------------------------------------
+  文件用途：/api/discussions/[id] 接口的服务器端逻辑
+  - GET：获取讨论详情 + 评论列表
+  - PUT：编辑讨论（仅作者）
+  - DELETE：删除讨论（仅作者）
+
+  对应的前端组件：CommunityClient.tsx
+  最后更新：2026-06-15
+  ============================================================ */}
+
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+const supabase = (!supabaseUrl || supabaseUrl.includes('placeholder'))
+  ? null
+  : createClient(supabaseUrl, supabaseAnonKey!)
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    if (!supabase) {
+      return NextResponse.json({ success: false, error: 'Discussion not found' }, { status: 404 })
+    }
     const { id } = await params
 
     const { data, error } = await supabase
@@ -52,6 +68,9 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    if (!supabase) {
+      return NextResponse.json({ success: false, error: 'Database not configured' }, { status: 503 })
+    }
     const { id } = await params
     const body = await request.json()
     const authHeader = request.headers.get('Authorization')
@@ -107,6 +126,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    if (!supabase) {
+      return NextResponse.json({ success: false, error: 'Database not configured' }, { status: 503 })
+    }
     const { id } = await params
     const authHeader = request.headers.get('Authorization')
 

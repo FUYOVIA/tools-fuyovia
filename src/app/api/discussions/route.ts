@@ -12,13 +12,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+// Graceful: if no Supabase config, return empty data (frontend will use seed data)
+const supabase = (!supabaseUrl || supabaseUrl.includes('placeholder'))
+  ? null
+  : createClient(supabaseUrl, supabaseAnonKey!)
 
 export async function GET(request: NextRequest) {
   try {
+    // No Supabase configured — return empty so frontend uses seed data
+    if (!supabase) {
+      return NextResponse.json({ success: true, data: [], total: 0 })
+    }
+
     const { searchParams } = new URL(request.url)
     const category = searchParams.get('category')
     const status = searchParams.get('status')
@@ -63,6 +71,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    if (!supabase) {
+      return NextResponse.json({ success: false, error: 'Database not configured' }, { status: 503 })
+    }
+
     const body = await request.json()
     const { title, content, category, author_id, author_name, author_avatar } = body
 
