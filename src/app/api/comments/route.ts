@@ -41,7 +41,8 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('Comments fetch error:', error)
-      return NextResponse.json({ success: false, error: 'Failed to fetch comments' }, { status: 500 })
+      // Graceful fallback: return empty data → frontend shows seed comments
+      return NextResponse.json({ success: true, data: [], total: 0 })
     }
 
     return NextResponse.json({
@@ -51,7 +52,8 @@ export async function GET(request: NextRequest) {
     })
   } catch (err) {
     console.error('Comments API error:', err)
-    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })
+    // Graceful fallback: return empty data
+    return NextResponse.json({ success: true, data: [], total: 0 })
   }
 }
 

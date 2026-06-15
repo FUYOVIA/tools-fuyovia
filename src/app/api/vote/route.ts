@@ -73,6 +73,7 @@ export async function POST(request: NextRequest) {
     }
   } catch (err) {
     console.error('Vote error:', err)
-    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })
+    // Graceful: don't crash the frontend
+    return NextResponse.json({ success: false, error: 'Vote failed', voted: false, votes_count: 0 })
   }
 }

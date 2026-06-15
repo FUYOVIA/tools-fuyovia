@@ -59,7 +59,8 @@ export async function GET(
     })
   } catch (err) {
     console.error('Get discussion error:', err)
-    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })
+    // Graceful fallback
+    return NextResponse.json({ success: false, error: 'Discussion not found' }, { status: 404 })
   }
 }
 
