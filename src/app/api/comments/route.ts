@@ -1,0 +1,104 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
+
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const discussionId = searchParams.get('discussion_id')
+    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100)
+    const offset = parseInt(searchParams.get('offset') || '0')
+
+    if (!discussionId) {
+      return NextResponse.json({ success: false, error: 'discussion_id is required' }, { status: 400 })
+    }
+
+    const { data, error, count } = await supabase
+      .from('comments')
+      .select('*', { count: 'exact' })
+      .eq('discussion_id', discussionId)
+      .order('created_at', { ascending: true })
+      .range(offset, offset + limit - 1)
+
+    if (error) {
+      console.error('Comments fetch error:', error)
+      return NextResponse.json({ success: false, error: 'Failed to fetch comments' }, { status: 500 })
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: data || [],
+      total: count || 0,
+    })
+  } catch (err) {
+    console.error('Comments API error:', err)
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { discussion_id, content, author_id, author_name, author_avatar } = body
+
+    if (!discussion_id || !content?.trim() || !author_id) {
+      return NextResponse.json(
+        { success: false, error: 'Discussion ID, content, and author are required' },
+        { status: 400 }
+      )
+    }
+
+    // Auth check
+    const authHeader = request.headers.get('Authorization')
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const token = authHeader.slice(7)
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    if (authError || !user || user.id !== author_id) {
+      return NextResponse.json({ success: false, error: 'Invalid session or user mismatch' }, { status: 401 })
+    }
+
+    // Verify the discussion exists
+    const { data: discussion, error: discError } = await supabase
+      .from('discussions')
+      .select('id')
+      .eq('id', discussion_id)
+      .single()
+
+    if (discError || !discussion) {
+      return NextResponse.json({ success: false, error: 'Discussion not found' }, { status: 404 })
+    }
+
+    // Create comment
+    const { data, error } = await supabase
+      .from('comments')
+      .insert({
+        discussion_id,
+        content: content.trim(),
+        author_id: user.id,
+        author_name: author_name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Anonymous',
+        author_avatar: author_avatar || user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Comment create error:', error)
+      return NextResponse.json({ success: false, error: 'Failed to create comment' }, { status: 500 })
+    }
+
+    // Update comment count on discussion
+    await supabase.rpc('increment_comments_count', { disc_id: discussion_id })
+
+    return NextResponse.json({ success: true, data })
+  } catch (err) {
+    console.error('Create comment error:', err)
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })
+  }
+}

@@ -1,0 +1,107 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
+
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const category = searchParams.get('category')
+    const status = searchParams.get('status')
+    const sort = searchParams.get('sort') || 'latest'
+    const search = searchParams.get('search') || ''
+    const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 50)
+    const offset = parseInt(searchParams.get('offset') || '0')
+
+    let query = supabase
+      .from('discussions')
+      .select('*', { count: 'exact' })
+      .order(sort === 'popular' ? 'votes_count' : 'created_at', { ascending: false })
+      .range(offset, offset + limit - 1)
+
+    if (category && category !== 'all') {
+      query = query.eq('category', category)
+    }
+    if (status && status !== 'all') {
+      query = query.eq('status', status)
+    }
+    if (search) {
+      query = query.or(`title.ilike.%${search}%,content.ilike.%${search}%`)
+    }
+
+    const { data, error, count } = await query
+
+    if (error) {
+      console.error('Discussions fetch error:', error)
+      return NextResponse.json({ success: false, error: 'Failed to fetch discussions' }, { status: 500 })
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: data || [],
+      total: count || 0,
+    })
+  } catch (err) {
+    console.error('Discussions API error:', err)
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { title, content, category, author_id, author_name, author_avatar } = body
+
+    if (!title?.trim() || !content?.trim() || !author_id) {
+      return NextResponse.json(
+        { success: false, error: 'Title, content, and author are required' },
+        { status: 400 }
+      )
+    }
+
+    // Verify user has a valid session
+    const authHeader = request.headers.get('Authorization')
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const token = authHeader.slice(7)
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    if (authError || !user) {
+      return NextResponse.json({ success: false, error: 'Invalid or expired session' }, { status: 401 })
+    }
+
+    if (user.id !== author_id) {
+      return NextResponse.json({ success: false, error: 'User ID mismatch' }, { status: 403 })
+    }
+
+    const { data, error } = await supabase
+      .from('discussions')
+      .insert({
+        title: title.trim(),
+        content: content.trim(),
+        category: category || 'general',
+        author_id: user.id,
+        author_name: author_name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Anonymous',
+        author_avatar: author_avatar || user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
+        status: 'open',
+        votes_count: 0,
+        comments_count: 0,
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Discussion create error:', error)
+      return NextResponse.json({ success: false, error: 'Failed to create discussion' }, { status: 500 })
+    }
+
+    return NextResponse.json({ success: true, data })
+  } catch (err) {
+    console.error('Create discussion error:', err)
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })
+  }
+}

@@ -21,6 +21,8 @@ interface AuthContextType {
   loading: boolean
   signIn: (email: string, password: string) => Promise<{ error: string | null }>
   signUp: (email: string, password: string, displayName: string) => Promise<{ error: string | null }>
+  signInWithGoogle: () => Promise<void>
+  signInWithFacebook: () => Promise<void>
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
   getToken: () => Promise<string | null>
@@ -110,6 +112,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setProfile(null)
   }
 
+  const signInWithGoogle = async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback?next=/community`,
+      },
+    })
+  }
+
+  const signInWithFacebook = async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: 'facebook',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback?next=/community`,
+      },
+    })
+  }
+
   const getToken = async (): Promise<string | null> => {
     const { data: { session } } = await supabase.auth.getSession()
     return session?.access_token ?? null
@@ -117,7 +137,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, profile, loading, signIn, signUp, signOut, refreshProfile, getToken }}
+      value={{ user, profile, loading, signIn, signUp, signInWithGoogle, signInWithFacebook, signOut, refreshProfile, getToken }}
     >
       {children}
     </AuthContext.Provider>
