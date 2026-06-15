@@ -85,7 +85,7 @@ export function generateMetadata({ params }: PremiumToolPageProps) {
   const tool = PREMIUM_TOOL_CONFIG[params.id]
   if (!tool) return {}
   return {
-    title: `${tool.name} - Premium AI Tool | FUYOVIA AI Tools`,
+    title: `${tool.name} - Premium AI Tool`,
     description: tool.description,
   }
 }

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Sign In - FUYOVIA AI Tools',
+  title: 'Sign In',
   description: 'Sign in to access premium AI tools.',
 }
 

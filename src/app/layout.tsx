@@ -15,6 +15,13 @@ export const metadata: Metadata = {
     template: '%s | FUYOVIA AI Tools',
   },
   description: 'AI tools for creators and marketers.',
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: '32x32' },
+      { url: '/icon.svg', type: 'image/svg+xml' },
+    ],
+    apple: '/favicon.ico',
+  },
 }
 
 export default function RootLayout({

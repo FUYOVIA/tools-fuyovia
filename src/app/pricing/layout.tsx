@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Pricing - FUYOVIA AI Tools',
+  title: 'Pricing',
   description: 'Simple, transparent pricing for AI tools. Start free, upgrade when you need more.',
 }
 

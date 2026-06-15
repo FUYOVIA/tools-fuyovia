@@ -78,7 +78,7 @@ export function generateMetadata({ params }: FreeToolPageProps) {
   const tool = FREE_TOOL_CONFIG[params.id]
   if (!tool) return {}
   return {
-    title: `${tool.name} - Free Tool | FUYOVIA AI Tools`,
+    title: `${tool.name} - Free Tool`,
     description: tool.description,
   }
 }
