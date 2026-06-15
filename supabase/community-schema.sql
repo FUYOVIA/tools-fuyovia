@@ -119,7 +119,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 INSERT INTO public.discussions (title, content, category, author_id, author_name, author_avatar, status)
 VALUES (
   'Welcome to the FUYOVIA Community! 🎉',
-  'We are thrilled to have you here!\n\nThis is where you can:\n\n• **Suggest new features** — Tell us what tools or improvements you''d love to see\n• **Report bugs** — Help us identify and fix issues faster\n• **Share feedback** — Let us know what works well and what doesn''t\n• **Chat with others** — Connect with fellow creators using our AI tools\n\n## How it works\n1. **Sign in** with Google or Facebook to participate\n2. **Upvote** ideas you care about — popular ones get prioritized\n3. **Leave comments** with detailed thoughts and use cases\n4. **Track progress** — We update statuses as we work on requests\n\nWe read every single discussion. Your voice directly shapes what we build next.\n\n— The FUYOVIA Team ✨',
+  'We are thrilled to have you here!\n\nThis is where you can:\n\n• **Suggest new features** — Tell us what tools or improvements you''d love to see\n• **Report bugs** — Help us identify and fix issues faster\n• **Share feedback** — Let us know what works well and what doesn''t\n• **Chat with others** — Connect with fellow creators using our AI tools\n\n## How it works\n1. **Sign in** with email, Google, or Facebook to participate\n2. **Upvote** ideas you care about — popular ones get prioritized\n3. **Leave comments** with detailed thoughts and use cases\n4. **Track progress** — We update statuses as we work on requests\n\nWe read every single discussion. Your voice directly shapes what we build next.\n\n— The FUYOVIA Team ✨',
   'feedback',
   '00000000-0000-0000-0000-000000000001',
   'FUYOVIA Team',
