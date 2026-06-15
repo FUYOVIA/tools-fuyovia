@@ -34,3 +34,9 @@ Thumbs.db
 
 # supabase
 .supabase/
+
+# Test scripts
+test-*.js
+debug-*.js
+generate-favicon.js
+test-report*.json
