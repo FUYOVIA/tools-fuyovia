@@ -1,5 +1,17 @@
 'use client'
 
+/* ============================================================
+  【认证系统】AuthContext.tsx — 全局认证上下文
+  ------------------------------------------------------------
+  文件用途：用户登录/注册/登出的完整状态管理
+  - signIn: 邮箱+密码登录
+  - signUp: 邮箱+密码注册
+  - signInWithGoogle / signInWithFacebook: OAuth 登录
+  - signOut: 登出
+  - getToken: 获取 JWT Token（用于 API 认证）
+  - 错误消息已本地化（不再显示原始 Supabase 技术错误）
+  ============================================================ */
+
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import type { User } from '@supabase/supabase-js'
@@ -90,7 +102,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) return { error: error.message }
+    if (error) {
+      // Map raw Supabase errors to user-friendly messages
+      if (error.message.includes('Invalid API key') || error.message.includes('api_key'))
+        return { error: 'Authentication service is temporarily unavailable. Please try again later.' }
+      if (error.message.includes('Invalid login credentials') || error.message === 'Invalid email or password')
+        return { error: 'Invalid email or password. Please check and try again.' }
+      if (error.message.includes('Email not confirmed'))
+        return { error: 'Please confirm your email before signing in.' }
+      if (error.message.includes('password'))
+        return { error: 'Invalid email or password combination.' }
+      // Generic fallback for other errors
+      return { error: error.message.length > 80 ? 'Sign in failed. Please try again.' : error.message }
+    }
     return { error: null }
   }
 
@@ -102,7 +126,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         data: { full_name: displayName },
       },
     })
-    if (error) return { error: error.message }
+    if (error) {
+      // Map raw Supabase errors to user-friendly messages
+      if (error.message.includes('Invalid API key') || error.message.includes('api_key'))
+        return { error: 'Authentication service is temporarily unavailable. Please try again later.' }
+      if (error.message.includes('already registered') || error.message.includes('already been registered'))
+        return { error: 'This email is already registered. Please sign in instead.' }
+      if (error.message.includes('password') || error.message.includes('Password'))
+        return { error: 'Password must be at least 6 characters.' }
+      // Generic fallback for other errors
+      return { error: error.message.length > 80 ? 'Registration failed. Please try again.' : error.message }
+    }
     return { error: null }
   }
 
