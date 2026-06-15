@@ -4,16 +4,13 @@
   【认证系统】AuthContext.tsx — 全局认证上下文
   ------------------------------------------------------------
   文件用途：用户登录/注册/登出的完整状态管理
-  - signIn: 邮箱+密码登录
-  - signUp: 邮箱+密码注册
-  - signInWithGoogle / signInWithFacebook: OAuth 登录
-  - signOut: 登出
-  - getToken: 获取 JWT Token（用于 API 认证）
-  - 错误消息已本地化（不再显示原始 Supabase 技术错误）
+  - supabase 为 null 时（未配置）自动降级，不报错
+  - 所有 Supabase 原始错误已映射为用户友好提示
+  - 2026-06-15 修复：Failed to fetch / users 表不存在 / 网络错误
   ============================================================ */
 
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
-import { supabase } from '@/lib/supabase/client'
+import { supabase, isSupabaseConfigured } from '@/lib/supabase/client'
 import type { User } from '@supabase/supabase-js'
 
 interface UserProfile {
@@ -48,148 +45,141 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   const fetchProfile = useCallback(async (userId: string) => {
+    if (!supabase) return
     try {
       const { data, error } = await supabase
         .from('users')
         .select('*')
         .eq('id', userId)
         .single()
-
       if (error) {
-        // users table might not exist yet — don't crash, just skip profile
-        console.warn('Profile table unavailable:', error.message)
+        // users 表可能不存在，静默跳过（不影响登录）
         return
       }
       setProfile(data as UserProfile)
-    } catch (err) {
-      // Network or config error — silently ignore for now
-      console.warn('Profile fetch skipped')
+    } catch {
+      // 网络错误，静默跳过
     }
   }, [])
 
   const refreshProfile = useCallback(async () => {
-    if (user) {
-      await fetchProfile(user.id)
-    }
+    if (user) await fetchProfile(user.id)
   }, [user, fetchProfile])
 
   useEffect(() => {
+    if (!supabase) {
+      setLoading(false)
+      return
+    }
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
-      if (session?.user) {
-        fetchProfile(session.user.id).catch(() => {}) // profile is optional, don't block auth
-      }
+      if (session?.user) fetchProfile(session.user.id).catch(() => {})
       setLoading(false)
     }).catch(() => {
-      // Supabase not configured or network error — treat as signed out, don't block UI
-      setUser(null)
-      setProfile(null)
       setLoading(false)
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         setUser(session?.user ?? null)
-        if (session?.user) {
-          await fetchProfile(session.user.id).catch(() => {})
-        } else {
-          setProfile(null)
-        }
+        if (session?.user) await fetchProfile(session.user.id).catch(() => {})
+        else setProfile(null)
         setLoading(false)
       }
     )
-
     return () => subscription.unsubscribe()
   }, [fetchProfile])
 
+  // ---------- 登录 ----------
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) {
-      // Map raw Supabase errors to user-friendly messages
-      const msg = error.message || ''
-      if (msg.includes('Invalid API key') || msg.includes('api_key'))
-        return { error: 'Authentication service is temporarily unavailable. Please try again later.' }
-      if (msg.includes('Failed to fetch') || msg.includes('fetch') || msg.includes('network') || msg.includes('NetworkError') || msg.includes('Load failed'))
-        return { error: 'Unable to connect to authentication server. Please check your internet connection and try again.' }
-      if (msg.includes('Invalid login credentials') || msg === 'Invalid email or password')
-        return { error: 'Invalid email or password. Please check and try again.' }
-      if (msg.includes('Email not confirmed'))
-        return { error: 'Please confirm your email before signing in.' }
-      if (msg.includes('password'))
-        return { error: 'Invalid email or password combination.' }
-      // Generic fallback for other errors
-      return { error: msg.length > 80 ? 'Sign in failed. Please try again.' : msg }
+    if (!supabase) return { error: 'Authentication is not available right now. Please try again later.' }
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) return { error: mapAuthError(error.message, 'signin') }
+      return { error: null }
+    } catch {
+      return { error: 'Network error. Please check your connection and try again.' }
     }
-    return { error: null }
   }
 
+  // ---------- 注册 ----------
   const signUp = async (email: string, password: string, displayName: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { full_name: displayName },
-      },
-    })
-    if (error) {
-      // Map raw Supabase errors to user-friendly messages
-      const msg = error.message || ''
-      if (msg.includes('Invalid API key') || msg.includes('api_key'))
-        return { error: 'Authentication service is temporarily unavailable. Please try again later.' }
-      if (msg.includes('Failed to fetch') || msg.includes('fetch') || msg.includes('network') || msg.includes('NetworkError') || msg.includes('Load failed'))
-        return { error: 'Unable to connect to authentication server. Please check your internet and try again.' }
-      if (msg.includes('already registered') || msg.includes('already been registered'))
-        return { error: 'This email is already registered. Please sign in instead.' }
-      if (msg.includes('password') || msg.includes('Password'))
-        return { error: 'Password must be at least 6 characters.' }
-      // Generic fallback for other errors
-      return { error: msg.length > 80 ? 'Registration failed. Please try again.' : msg }
+    if (!supabase) return { error: 'Authentication is not available right now. Please try again later.' }
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { full_name: displayName } },
+      })
+      if (error) return { error: mapAuthError(error.message, 'signup') }
+      return { error: null }
+    } catch {
+      return { error: 'Network error. Please check your connection and try again.' }
     }
-    return { error: null }
   }
 
   const signOut = async () => {
-    await supabase.auth.signOut()
+    if (supabase) await supabase.auth.signOut().catch(() => {})
     setUser(null)
     setProfile(null)
   }
 
   const signInWithGoogle = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=/community`,
-      },
-    })
+    if (supabase) {
+      await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: `${window.location.origin}/auth/callback?next=/community` },
+      })
+    }
   }
 
   const signInWithFacebook = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: 'facebook',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=/community`,
-      },
-    })
+    if (supabase) {
+      await supabase.auth.signInWithOAuth({
+        provider: 'facebook',
+        options: { redirectTo: `${window.location.origin}/auth/callback?next=/community` },
+      })
+    }
   }
 
   const getToken = async (): Promise<string | null> => {
+    if (!supabase) return null
     const { data: { session } } = await supabase.auth.getSession()
     return session?.access_token ?? null
   }
 
   return (
-    <AuthContext.Provider
-      value={{ user, profile, loading, signIn, signUp, signInWithGoogle, signInWithFacebook, signOut, refreshProfile, getToken }}
-    >
+    <AuthContext.Provider value={{
+      user, profile, loading,
+      signIn, signUp,
+      signInWithGoogle, signInWithFacebook,
+      signOut, refreshProfile, getToken,
+    }}>
       {children}
     </AuthContext.Provider>
   )
 }
 
+// ---------- 错误消息本地化 ----------
+function mapAuthError(msg: string, mode: 'signin' | 'signup'): string {
+  const m = (msg || '').toLowerCase()
+  if (m.includes('invalid api key') || m.includes('api_key'))
+    return 'Authentication service is temporarily unavailable. Please try again later.'
+  if (m.includes('failed to fetch') || m.includes('network') || m.includes('load failed'))
+    return 'Unable to connect. Please check your internet and try again.'
+  if (m.includes('invalid login credentials') || m.includes('invalid email or password'))
+    return 'Invalid email or password. Please check and try again.'
+  if (m.includes('email not confirmed'))
+    return 'Please confirm your email before signing in.'
+  if (m.includes('already registered') || m.includes('already been registered'))
+    return 'This email is already registered. Please sign in instead.'
+  if (m.includes('password'))
+    return 'Password must be at least 6 characters.'
+  return msg.length > 80 ? `Unable to ${mode === 'signin' ? 'sign in' : 'register'}. Please try again.` : msg
+}
+
 export function useAuth() {
   const context = useContext(AuthContext)
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider')
-  }
+  if (context === undefined) throw new Error('useAuth must be used within an AuthProvider')
   return context
 }
