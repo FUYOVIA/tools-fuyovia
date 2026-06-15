@@ -585,6 +585,9 @@ export default function CommunityClient() {
   const [error, setError] = useState<string | null>(null)
   const [userVotes, setUserVotes] = useState<Set<string>>(new Set())
   const [showLoginModal, setShowLoginModal] = useState(false)
+  // Detect iframe embedding (Shoplazza) — remove max-width when embedded
+  const [isEmbedded, setIsEmbedded] = useState(false)
+  useEffect(() => { try { setIsEmbedded(window.self !== window.top) } catch { setIsEmbedded(true) } }, [])
 
   // Email auth form states
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin')
@@ -853,12 +856,12 @@ export default function CommunityClient() {
   // ===== Render: List View =====
   if (view === 'list') {
     return (
-      <div className="w-full">
+      <div className={`w-full ${isEmbedded ? '' : 'min-h-screen bg-[#fefdf8]'}`} style={isEmbedded ? { background: '#fefdf8' } : undefined}>
         {/* ========== HERO SECTION — Bold & Atmospheric ========== */}
-        <div className="relative overflow-hidden rounded-b-3xl"
+        <div className={`relative overflow-hidden ${isEmbedded ? '' : 'rounded-b-3xl'}`}
              style={{
                background: 'linear-gradient(135deg, #0c4a6e 0%, #0369a1 25%, #0284c7 50%, #0ea5e9 75%, #38bdf8 100%)',
-               padding: '60px 24px 50px',
+               padding: isEmbedded ? '40px 0 35px' : '60px 24px 50px',
              }}>
           {/* Decorative background elements */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -867,7 +870,7 @@ export default function CommunityClient() {
             <div className="absolute bottom-0 right-1/4 w-96 h-40 rounded-full opacity-6" style={{ background: 'radial-gradient(circle, #bae6fd 0%, transparent 70%)' }} />
           </div>
 
-          <div className="relative max-w-5xl mx-auto text-center">
+          <div className={`relative ${isEmbedded ? 'px-6 sm:px-8' : 'max-w-5xl mx-auto'} text-center`}>
             {/* Badge */}
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-6"
                  style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)' }}>
@@ -898,7 +901,7 @@ export default function CommunityClient() {
         </div>
 
         {/* ========== STATS BAR ========== */}
-        <div className="max-w-5xl mx-auto px-4 -mt-6 relative z-10">
+        <div className={`${isEmbedded ? 'px-6 sm:px-8' : 'max-w-5xl mx-auto px-4'} -mt-6 relative z-10`}>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
             {[
               { label: 'Members', value: totalMembers.toLocaleString(), icon: '👥', color: '#0ea5e9' },
@@ -916,7 +919,7 @@ export default function CommunityClient() {
         </div>
 
         {/* ========== MAIN CONTENT AREA ========== */}
-        <div className="max-w-5xl mx-auto px-4 py-8">
+        <div className={`${isEmbedded ? 'px-6 sm:px-8' : 'max-w-5xl mx-auto px-4'} py-8`}>
 
           {/* Search & Sort Bar */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-6">
@@ -1198,7 +1201,7 @@ export default function CommunityClient() {
     const hasVoted = userVotes.has(selectedDiscussion.id)
 
     return (
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className={`${isEmbedded ? 'px-6 sm:px-8' : 'max-w-4xl mx-auto px-4'} py-8`}>
         <button onClick={backToList}
           className="flex items-center gap-2 text-sm font-bold text-neutral-500 hover:text-sky-600 transition-colors mb-6">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
