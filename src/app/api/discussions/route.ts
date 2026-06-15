@@ -1,3 +1,14 @@
+{/* ============================================================
+  【社区API】route.ts — 讨论区 API 路由（GET + POST）
+  ------------------------------------------------------------
+  文件用途：/api/discussions 接口的服务器端逻辑
+  - GET：获取讨论列表（支持分类/排序/分页/搜索）
+  - POST：创建新讨论（需要登录）
+
+  对应的前端组件：CommunityClient.tsx
+  最后更新：2026-06-15
+  ============================================================ */}
+
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 

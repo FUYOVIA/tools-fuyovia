@@ -1,3 +1,14 @@
+{/* ============================================================
+  【社区API】route.ts — 评论 API 路由（GET + POST）
+  ------------------------------------------------------------
+  文件用途：/api/comments 接口的服务器端逻辑
+  - GET：获取某讨论下的所有评论（按 discussion_id 筛选）
+  - POST：添加新评论（需要登录）
+
+  对应的前端组件：CommunityClient.tsx
+  最后更新：2026-06-15
+  ============================================================ */}
+
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 

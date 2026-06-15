@@ -1,3 +1,14 @@
+{/* ============================================================
+  【社区API】route.ts — 投票 API 路由（POST）
+  ------------------------------------------------------------
+  文件用途：/api/vote 接口的服务器端逻辑
+  - POST：点赞/取消点赞讨论（toggle 逻辑）
+  - 原子操作：防止并发导致票数错误
+
+  对应的前端组件：CommunityClient.tsx
+  最后更新：2026-06-15
+  ============================================================ */}
+
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
