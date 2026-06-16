@@ -4,9 +4,11 @@ import { NextRequest, NextResponse } from 'next/server'
 export const TOOL_CREDITS: Record<string, number> = {
   'ai-humanizer': 2,
   'social-media-writer': 1,
+  'social-media-generator': 1,
   'product-description': 1,
   'email-copy': 1,
   'seo-blog-writer': 3,
+  'seo-blog-generator': 3,
   'video-script': 2,
   'ai-image-generator': 5,
   'hashtag-generator': 1,

@@ -28,7 +28,7 @@ export default function SocialMediaWriterClient({ previewMode = false }: SocialM
     setError('')
 
     try {
-      const response = await authFetch('/api/social-media-writer', {
+      const response = await authFetch('/api/social-media-generator', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: content, platform }),

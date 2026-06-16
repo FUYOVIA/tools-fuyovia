@@ -23,7 +23,7 @@ export default function SeoBlogWriterClient({ previewMode = false }: SeoBlogWrit
     setOutput('')
 
     try {
-      const res = await authFetch('/api/seo-blog-writer', {
+      const res = await authFetch('/api/seo-blog-generator', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ topic, keywords, length }),
